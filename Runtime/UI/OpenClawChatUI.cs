@@ -67,9 +67,9 @@ namespace OpenClawWorlds.UI
         int activeTab; // 0 = Chat, 1 = Skills, 2 = Crons
         static readonly string[] TabNames = { "Chat", "Skills", "Crons" };
 
-        // CityDef audit retry
-        const int MaxAuditRetries = 2;
-        int auditRetryCount;
+        // Timeout: if no response after this many seconds, stop waiting
+        const float ResponseTimeout = 90f;
+        float lastSendTime;
 
         struct ChatLine
         {
@@ -151,6 +151,20 @@ namespace OpenClawWorlds.UI
                     SendChat(msg);
                     inputText = "";
                 }
+            }
+
+            // ── Timeout: don't hang forever ──
+            if (waiting && Time.time - lastSendTime > ResponseTimeout)
+            {
+                waiting = false;
+                statusText = "";
+                lines.Add(new ChatLine
+                {
+                    speaker = "System",
+                    text = "Response timed out — try again.",
+                    color = new Color(1f, 0.6f, 0.3f)
+                });
+                shouldScrollToBottom = true;
             }
 
             // ── NPC proximity detection (E to talk) ──
@@ -289,11 +303,9 @@ namespace OpenClawWorlds.UI
                 return;
             }
 
-            // Reset audit state for new user message
-            auditRetryCount = 0;
-
             lines.Add(new ChatLine { speaker = "You", text = message, color = Color.white });
             waiting = true;
+            lastSendTime = Time.time;
             statusText = "Thinking...";
             shouldScrollToBottom = true;
 
@@ -325,18 +337,6 @@ namespace OpenClawWorlds.UI
             string speaker = currentNPC != null ? currentNPC.npcName
                 : (AIConfig.Instance != null ? AIConfig.Instance.assistantName : "Agent");
 
-            // ── CityDef audit: log warnings but always proceed to build ──
-            string cityJson = ExtractCityDefJson(response);
-            if (cityJson != null)
-            {
-                var auditErrors = AuditCityDefBasic(cityJson);
-                if (auditErrors.Count > 0)
-                {
-                    string errorList = string.Join(", ", auditErrors);
-                    Debug.LogWarning($"[OpenClawChat] CityDef audit warnings (building anyway): {errorList}");
-                }
-            }
-
             // Strip code blocks from display
             string displayText = StripAllCodeFences(response);
             if (string.IsNullOrWhiteSpace(displayText))
@@ -357,110 +357,6 @@ namespace OpenClawWorlds.UI
 
             // ── Process protocols: CityDef, BehaviorDef, HotReload ──
             ProcessProtocols(response);
-        }
-
-        // ── CityDef JSON extraction ──
-
-        static string ExtractCityDefJson(string response)
-        {
-            // ```citydef fence
-            int fenceStart = response.IndexOf("```citydef");
-            if (fenceStart >= 0)
-            {
-                int jsonStart = response.IndexOf('\n', fenceStart);
-                if (jsonStart >= 0)
-                {
-                    jsonStart++;
-                    int fenceEnd = response.IndexOf("```", jsonStart);
-                    if (fenceEnd > jsonStart)
-                        return response.Substring(jsonStart, fenceEnd - jsonStart).Trim();
-                }
-            }
-
-            // ```json fence with citydef markers
-            fenceStart = response.IndexOf("```json");
-            if (fenceStart >= 0)
-            {
-                int jsonStart = response.IndexOf('\n', fenceStart);
-                if (jsonStart >= 0)
-                {
-                    jsonStart++;
-                    int fenceEnd = response.IndexOf("```", jsonStart);
-                    if (fenceEnd > jsonStart)
-                    {
-                        string block = response.Substring(jsonStart, fenceEnd - jsonStart).Trim();
-                        if (block.Contains("\"streets\"") || block.Contains("\"buildings\""))
-                            return block;
-                    }
-                }
-            }
-
-            // Raw JSON with CityDef markers
-            int braceStart = response.IndexOf('{');
-            if (braceStart >= 0)
-            {
-                string sub = response.Substring(braceStart);
-                if (sub.Contains("\"streets\"") && sub.Contains("\"buildings\""))
-                {
-                    int depth = 0;
-                    bool inString = false;
-                    for (int i = 0; i < sub.Length; i++)
-                    {
-                        char c = sub[i];
-                        if (inString)
-                        {
-                            if (c == '\\') { i++; continue; }
-                            if (c == '"') inString = false;
-                            continue;
-                        }
-                        if (c == '"') { inString = true; continue; }
-                        if (c == '{') depth++;
-                        else if (c == '}')
-                        {
-                            depth--;
-                            if (depth == 0) return sub.Substring(0, i + 1);
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        /// <summary>Basic audit of CityDef JSON — checks for common LLM mistakes.</summary>
-        static List<string> AuditCityDefBasic(string json)
-        {
-            var errors = new List<string>();
-            try
-            {
-                string sanitized = CityDefParser.SanitizeJson(json);
-                var city = JsonUtility.FromJson<CityDef>(sanitized);
-                if (city == null)
-                {
-                    errors.Add("JSON parse failed completely");
-                    return errors;
-                }
-                if (string.IsNullOrEmpty(city.name))
-                    errors.Add("Missing 'name' field");
-                if (city.streets == null || city.streets.Length == 0)
-                    errors.Add("Missing 'streets' array — need at least one street");
-                if (city.buildings == null || city.buildings.Length == 0)
-                    errors.Add("Missing 'buildings' array — need at least one building");
-                if (city.buildings != null)
-                {
-                    foreach (var b in city.buildings)
-                    {
-                        if (string.IsNullOrEmpty(b.name))
-                            errors.Add("Building missing 'name'");
-                        if (string.IsNullOrEmpty(b.zone) && string.IsNullOrEmpty(b.interior))
-                            errors.Add($"Building '{b.name}' missing 'zone' — use Saloon, Sheriff, Hotel, etc.");
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                errors.Add($"JSON parse error: {e.Message}");
-            }
-            return errors;
         }
 
         static string StripAllCodeFences(string text)
