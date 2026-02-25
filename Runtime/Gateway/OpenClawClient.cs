@@ -250,7 +250,7 @@ namespace OpenClawWorlds.Gateway
             string json = "{\"type\":\"req\",\"id\":\"" + reqId + "\"," +
                 "\"method\":\"connect\",\"params\":{" +
                 "\"minProtocol\":3,\"maxProtocol\":3," +
-                "\"client\":{\"id\":\"openclaw-unity-sdk\",\"version\":\"1.0.0\",\"platform\":\"unity\",\"mode\":\"agent\"}," +
+                "\"client\":{\"id\":\"openclaw-control-ui\",\"version\":\"1.0.0\",\"platform\":\"web\",\"mode\":\"webchat\"}," +
                 "\"role\":\"operator\"," +
                 "\"scopes\":[\"operator.read\",\"operator.write\",\"operator.admin\"]," +
                 "\"caps\":[\"tool-events\"]" +
