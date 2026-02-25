@@ -296,9 +296,9 @@ namespace OpenClawWorlds.UI
             GUI.Box(new Rect(x, y, w, h), "", boxStyle);
 
             // Header
-            string title = currentNPC != null
-                ? $"Chat with {currentNPC.npcName}"
-                : "OpenClaw Chat";
+            string agentName = currentNPC != null ? currentNPC.npcName
+                : (AIConfig.Instance != null ? AIConfig.Instance.assistantName : "Agent");
+            string title = $"Chat with {agentName}";
             GUI.Label(new Rect(x, y + 8, w, 30), title, headerStyle);
 
             // Close hint
