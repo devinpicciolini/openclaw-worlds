@@ -3,14 +3,16 @@ using UnityEngine;
 namespace OpenClawWorlds.Player
 {
     /// <summary>
-    /// Drop-in first-person WASD + mouse-look controller.
+    /// Drop-in third-person WASD + mouse-orbit controller.
     /// Attach to a GameObject — auto-adds <see cref="CharacterController"/>.
     ///
     /// Controls:
     /// - WASD to move, Shift to sprint
-    /// - Mouse to look around (cursor locked)
+    /// - Mouse to orbit camera around the player
+    /// - Scroll wheel to zoom in/out
     /// - Space to jump
     /// - Tab opens chat (movement + look auto-blocked while chat is open)
+    /// - E to interact with nearby NPCs
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class SimplePlayerController : MonoBehaviour
@@ -29,15 +31,25 @@ namespace OpenClawWorlds.Player
         [Tooltip("Mouse sensitivity")]
         public float lookSensitivity = 2.5f;
         [Tooltip("Minimum vertical angle (look down)")]
-        public float minPitch = -60f;
+        public float minPitch = -10f;
         [Tooltip("Maximum vertical angle (look up)")]
         public float maxPitch = 75f;
 
-        [Header("Camera")]
+        [Header("Camera — Third Person")]
         [Tooltip("If null, uses Camera.main")]
         public Camera playerCamera;
-        [Tooltip("Camera offset from player pivot (eye height)")]
-        public Vector3 cameraOffset = new Vector3(0, 1.6f, 0);
+        [Tooltip("Default distance behind the player")]
+        public float cameraDistance = 6f;
+        [Tooltip("Minimum zoom distance")]
+        public float cameraDistanceMin = 2f;
+        [Tooltip("Maximum zoom distance")]
+        public float cameraDistanceMax = 15f;
+        [Tooltip("Height offset above the player pivot")]
+        public float cameraHeightOffset = 2f;
+        [Tooltip("Scroll wheel zoom speed")]
+        public float zoomSpeed = 2f;
+        [Tooltip("How fast the camera smooths to target position")]
+        public float cameraSmoothSpeed = 10f;
 
         /// <summary>
         /// Set to true to suppress all input (e.g. while a UI is focused).
@@ -59,8 +71,9 @@ namespace OpenClawWorlds.Player
 
         CharacterController cc;
         float yaw;
-        float pitch;
+        float pitch = 20f; // start slightly looking down at the player
         float verticalVelocity;
+        float currentDistance;
         bool cameraReady;
 
         void Awake()
@@ -74,13 +87,13 @@ namespace OpenClawWorlds.Player
             cc.center = new Vector3(0, 0.9f, 0);
             cc.slopeLimit = 45f;
             cc.stepOffset = 0.4f;
+            currentDistance = cameraDistance;
         }
 
         void Start()
         {
             // Initialize yaw from current facing
             yaw = transform.eulerAngles.y;
-            pitch = 0f;
 
             // Find camera — try assigned, then Camera.main, then search
             if (playerCamera == null)
@@ -94,9 +107,9 @@ namespace OpenClawWorlds.Player
 #endif
             }
 
-            AttachCamera();
+            SetupCamera();
 
-            // Lock cursor for FPS gameplay
+            // Lock cursor for gameplay
             if (!_inputBlocked)
             {
                 Cursor.lockState = CursorLockMode.Locked;
@@ -104,24 +117,23 @@ namespace OpenClawWorlds.Player
             }
         }
 
-        void AttachCamera()
+        void SetupCamera()
         {
             if (playerCamera == null) return;
 
-            playerCamera.transform.SetParent(transform);
-            playerCamera.transform.localPosition = cameraOffset;
-            playerCamera.transform.localRotation = Quaternion.identity;
+            // Detach camera from any parent so we can position it freely
+            playerCamera.transform.SetParent(null);
             cameraReady = true;
-            Debug.Log($"[SimplePlayerController] Camera attached: {playerCamera.name}");
+            Debug.Log($"[SimplePlayerController] Camera ready (third-person): {playerCamera.name}");
         }
 
         void Update()
         {
-            // Retry camera attachment if it wasn't ready at Start
+            // Retry camera setup if it wasn't ready at Start
             if (!cameraReady)
             {
                 if (playerCamera == null) playerCamera = Camera.main;
-                if (playerCamera != null) AttachCamera();
+                if (playerCamera != null) SetupCamera();
             }
 
             if (_inputBlocked) return;
@@ -130,20 +142,47 @@ namespace OpenClawWorlds.Player
             HandleMovement();
         }
 
+        void LateUpdate()
+        {
+            if (!cameraReady || playerCamera == null || _inputBlocked) return;
+            UpdateCameraPosition();
+        }
+
         void HandleMouseLook()
         {
-            // Always-on mouse look when cursor is locked (standard FPS behavior)
             float mx = Input.GetAxis("Mouse X") * lookSensitivity;
             float my = Input.GetAxis("Mouse Y") * lookSensitivity;
 
             yaw += mx;
-            pitch -= my;
+            pitch += my; // inverted: mouse up = look down at player
             pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
-            transform.rotation = Quaternion.Euler(0, yaw, 0);
+            // Scroll wheel zoom
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(scroll) > 0.01f)
+            {
+                currentDistance -= scroll * zoomSpeed;
+                currentDistance = Mathf.Clamp(currentDistance, cameraDistanceMin, cameraDistanceMax);
+            }
+        }
 
-            if (playerCamera != null)
-                playerCamera.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
+        void UpdateCameraPosition()
+        {
+            // Pivot point: player position + height offset
+            Vector3 pivot = transform.position + Vector3.up * cameraHeightOffset;
+
+            // Camera orbits around the pivot
+            Quaternion rotation = Quaternion.Euler(pitch, yaw, 0);
+            Vector3 offset = rotation * new Vector3(0, 0, -currentDistance);
+            Vector3 targetPos = pivot + offset;
+
+            // Smooth camera movement
+            playerCamera.transform.position = Vector3.Lerp(
+                playerCamera.transform.position, targetPos,
+                cameraSmoothSpeed * Time.deltaTime);
+
+            // Always look at the pivot
+            playerCamera.transform.LookAt(pivot);
         }
 
         void HandleMovement()
@@ -158,13 +197,26 @@ namespace OpenClawWorlds.Player
             if (grounded && Input.GetKeyDown(KeyCode.Space))
                 verticalVelocity = Mathf.Sqrt(jumpHeight * -2f * gravity);
 
-            // ── Horizontal movement ──
+            // ── Horizontal movement relative to camera facing ──
             float h = Input.GetAxisRaw("Horizontal"); // A/D
             float v = Input.GetAxisRaw("Vertical");   // W/S
 
-            Vector3 dir = transform.right * h + transform.forward * v;
+            // Get camera-relative forward/right (flattened to XZ plane)
+            Vector3 camForward = playerCamera != null ? playerCamera.transform.forward : transform.forward;
+            Vector3 camRight = playerCamera != null ? playerCamera.transform.right : transform.right;
+            camForward.y = 0;
+            camRight.y = 0;
+            camForward.Normalize();
+            camRight.Normalize();
+
+            Vector3 dir = camRight * h + camForward * v;
             if (dir.sqrMagnitude > 1f)
                 dir.Normalize();
+
+            // Rotate player to face movement direction
+            if (dir.sqrMagnitude > 0.01f)
+                transform.rotation = Quaternion.Slerp(transform.rotation,
+                    Quaternion.LookRotation(dir), 10f * Time.deltaTime);
 
             float speed = moveSpeed;
             if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))

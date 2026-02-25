@@ -471,7 +471,17 @@ namespace OpenClawWorlds.Protocols
             float speed = npc.speed > 0 ? npc.speed : 0.8f;
             float radius = npc.radius > 0 ? npc.radius : 10f;
 
-            NPCBuilder.SpawnTownsfolk(root, npc.prefab, npc.name, pos, speed, radius, mat);
+            // Build greeting from role if not specified
+            string greeting = npc.greeting;
+            if (string.IsNullOrEmpty(greeting) && !string.IsNullOrEmpty(npc.role))
+                greeting = $"Hey there, I'm {npc.name} the {npc.role}.";
+
+            string[] offerings = !string.IsNullOrEmpty(npc.role)
+                ? new[] { npc.role, "Small talk", "Town gossip" }
+                : null;
+
+            NPCBuilder.SpawnTownsfolk(root, npc.prefab, npc.name, pos, speed, radius, mat,
+                greeting, offerings, npc.personality);
             return true;
         }
     }

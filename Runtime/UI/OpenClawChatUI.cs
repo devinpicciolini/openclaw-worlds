@@ -29,6 +29,16 @@ namespace OpenClawWorlds.UI
         [Tooltip("Key to toggle the chat window")]
         public KeyCode toggleKey = KeyCode.Tab;
 
+        [Tooltip("Key to interact with nearby NPCs")]
+        public KeyCode interactKey = KeyCode.E;
+
+        [Tooltip("Max distance to detect NPCs for interaction prompt")]
+        public float npcInteractRange = 5f;
+
+        // Nearby NPC tracking (for E-key interaction prompt)
+        NPCData nearbyNPC;
+        float nearbyNPCDist;
+
         // Quick action presets — shown as buttons in the chat tab
         static readonly string[][] QuickActions = new string[][]
         {
@@ -142,10 +152,59 @@ namespace OpenClawWorlds.UI
                     inputText = "";
                 }
             }
+
+            // ── NPC proximity detection (E to talk) ──
+            if (!chatOpen)
+            {
+                // Scan for nearby NPCs every frame — lightweight since NPC count is small
+                float dist;
+                nearbyNPC = FindNearestNPC(npcInteractRange, out dist);
+                nearbyNPCDist = dist;
+
+                // Press E to open chat with nearby NPC
+                if (nearbyNPC != null && Input.GetKeyDown(interactKey))
+                {
+                    OpenChatWithNPC(nearbyNPC);
+                }
+            }
+            else
+            {
+                nearbyNPC = null;
+            }
         }
 
-        NPCData FindNearestNPC()
+        /// <summary>
+        /// Opens the chat panel targeting a specific NPC.
+        /// Acquires the NPC's agent automatically.
+        /// </summary>
+        void OpenChatWithNPC(NPCData npc)
         {
+            chatOpen = true;
+            SimplePlayerController.InputBlocked = true;
+
+            currentNPC = npc;
+            lines.Clear();
+            lines.Add(new ChatLine
+            {
+                speaker = npc.npcName,
+                text = npc.greeting,
+                color = new Color(0.4f, 0.8f, 1f)
+            });
+            AcquireNPCAgent();
+
+            // Fetch skills & crons when chat opens
+            if (!skillsLoaded && !skillsLoading)
+                FetchSkillsFromGateway();
+            if (!cronsLoaded && !cronsLoading)
+                FetchCronsFromGateway();
+
+            shouldScrollToBottom = true;
+            activeTab = 0;
+        }
+
+        NPCData FindNearestNPC(float maxRange = float.MaxValue, out float distance)
+        {
+            distance = float.MaxValue;
             var cam = Camera.main;
             Vector3 playerPos = cam != null ? cam.transform.position : transform.position;
 
@@ -159,12 +218,13 @@ namespace OpenClawWorlds.UI
             foreach (var npc in allNPCs)
             {
                 float dist = Vector3.Distance(playerPos, npc.transform.position);
-                if (dist < nearestDist)
+                if (dist < nearestDist && dist <= maxRange)
                 {
                     nearestDist = dist;
                     nearest = npc;
                 }
             }
+            distance = nearestDist;
             return nearest;
         }
 
@@ -765,8 +825,9 @@ namespace OpenClawWorlds.UI
                     return;
                 }
 
-                // Re-detect nearest NPC every time chat opens
-                currentNPC = FindNearestNPC();
+                // Re-detect nearest NPC every time chat opens (no range limit for Tab)
+                float _d;
+                currentNPC = FindNearestNPC(float.MaxValue, out _d);
                 if (currentNPC != null)
                 {
                     lines.Clear();
@@ -820,6 +881,29 @@ namespace OpenClawWorlds.UI
                 GUI.Label(new Rect(15, 15, 500, 30), connStatus, hudStyle);
                 GUI.Label(new Rect(15, 40, 400, 30),
                     $"Press <b>{toggleKey}</b> to chat", hudStyle);
+
+                // NPC interaction prompt — centered on screen
+                if (nearbyNPC != null)
+                {
+                    string npcPrompt = $"Press <b>{interactKey}</b> to talk to <b>{nearbyNPC.npcName}</b>";
+                    float promptW = 400f;
+                    float promptH = 40f;
+                    float promptX = (Screen.width - promptW) / 2f;
+                    float promptY = Screen.height * 0.65f;
+
+                    // Semi-transparent background for readability
+                    GUI.color = new Color(0, 0, 0, 0.6f);
+                    GUI.DrawTexture(new Rect(promptX - 10, promptY - 5, promptW + 20, promptH + 10), Texture2D.whiteTexture);
+                    GUI.color = Color.white;
+
+                    var npcPromptStyle = new GUIStyle(hudStyle)
+                    {
+                        alignment = TextAnchor.MiddleCenter,
+                        fontSize = 18
+                    };
+                    GUI.Label(new Rect(promptX, promptY, promptW, promptH), npcPrompt, npcPromptStyle);
+                }
+
                 return;
             }
 

@@ -69,7 +69,8 @@ Create the file `Assets/StreamingAssets/ai_config.json`:
   "gatewayToken": "your-token-here",
   "gatewayWsUrl": "ws://127.0.0.1:18789",
   "agentId": "your-agent-name",
-  "assistantName": "Your Agent Name"
+  "assistantName": "Your Agent Name",
+  "personality": "You are a helpful architect who builds worlds. You speak with confidence and get things done."
 }
 ```
 
@@ -86,7 +87,7 @@ Create the file `Assets/StreamingAssets/ai_config.json`:
 
 ### Step 5: Chat
 
-You'll see **"Connected to OpenClaw"** in the top-left corner. Press **Tab** to open the chat panel. Type a message, press **Enter**. You're talking to your AI agent.
+You'll see **"Connected to OpenClaw"** in the top-left corner. Press **Tab** to open the chat panel. Type a message, press **Enter**. You're talking to your AI agent. Ask it to build a town — it'll spawn one in real-time with NPCs you can walk up to and talk to by pressing **E**.
 
 That's it. You're done.
 
@@ -169,7 +170,7 @@ Personality descriptions and offerings are automatically injected into the agent
 
 **Disposable NPCs** (random townsfolk) share a rotating agent slot so you're not burning resources on background characters.
 
-The built-in `OpenClawChatUI` handles all of this automatically — it finds the nearest NPC, acquires an agent, and routes your messages. Press **Tab** to chat, press **Enter** to send.
+The built-in `OpenClawChatUI` handles all of this automatically. Walk up to any NPC and press **E** to start talking — the SDK detects the nearest NPC, acquires an agent, and routes your messages. Press **Tab** to chat with the main agent, press **Enter** to send.
 
 ```
 ~/.openclaw/
@@ -208,14 +209,21 @@ Agent writes C# code blocks, and they compile and run in the editor.
 
 ## Built-in Chat UI
 
-The SDK ships with `OpenClawChatUI` — a zero-setup chat window. Press **Tab** to open, type a message, press **Enter** to send. The panel docks to the right side of the screen so you can see your scene while chatting.
+The SDK ships with `OpenClawChatUI` — a zero-setup chat window. The panel docks to the right side of the screen so you can see your scene while chatting.
+
+**Controls:**
+- **Tab** — open/close chat with the main agent
+- **E** — talk to the nearest NPC (walk up to any NPC and press E)
+- **Enter** — send message
 
 **Features:**
+- **NPC interaction** — walk up to any NPC, see "Press E to talk to [name]", start chatting. Agent acquired automatically.
 - **Chat tab** — talk to the main agent or nearest NPC agent
 - **Skills tab** — live list of all available OpenClaw skills from the gateway
 - **Crons tab** — scheduled cron jobs and their status
 - **Quick action presets** — one-tap buttons for common requests ("Build me a small town", "Make it rain", etc.)
 - **CityDef audit loop** — validates agent JSON and auto-retries until it passes (up to 2 attempts)
+- **Agent identity injection** — on connect, pushes an IDENTITY.md to your agent so it knows it's inside a Unity game, what it can build, and how to use its tools
 
 MinimalBootstrap creates it automatically. For your own scripts, add it to any GameObject:
 
@@ -225,13 +233,13 @@ using OpenClawWorlds.UI;
 gameObject.AddComponent<OpenClawChatUI>();
 ```
 
-It auto-detects nearby NPCs and routes messages to their agent. If there's no NPC, it talks to your main agent from `ai_config.json`. Every response is automatically processed through all three protocols — if the agent returns CityDef JSON, a town appears; if it returns BehaviorDef, weather changes; if it returns C# code, it compiles live. Replace it with your own UI when you're ready for production.
+Walk up to any NPC and press **E** to start a conversation — the SDK automatically detects the nearest NPC, spins up a dedicated agent, and routes your messages. When there's no NPC nearby, it talks to your main agent from `ai_config.json`. Every response is automatically processed through all three protocols — if the agent returns CityDef JSON, a town appears; if it returns BehaviorDef, weather changes; if it returns C# code, it compiles live. Replace it with your own UI when you're ready for production.
 
 ---
 
 ## Built-in Player Controller
 
-The SDK includes `SimplePlayerController` — a drop-in first-person WASD + mouse-look controller. No prefab needed, just add it to a GameObject:
+The SDK includes `SimplePlayerController` — a drop-in third-person WASD + mouse-orbit controller. No prefab needed, just add it to a GameObject:
 
 ```csharp
 using OpenClawWorlds.Player;
@@ -240,9 +248,10 @@ gameObject.AddComponent<SimplePlayerController>();
 ```
 
 - **WASD** to move, **Shift** to sprint, **Space** to jump
-- Always-on mouse look with cursor locking (standard FPS behavior)
+- Third-person camera that orbits around the player (mouse to orbit, scroll to zoom)
 - Cursor automatically unlocks when chat is open, re-locks when closed
 - Auto-finds and attaches the scene camera
+- **E** to interact with nearby NPCs (handled by the chat UI)
 
 ---
 
@@ -374,7 +383,7 @@ Runtime/
 ├── Gateway/        # WebSocket transport + JSON-RPC client
 ├── Protocols/      # CityDef, BehaviorDef, HotReload
 ├── Agents/         # Agent lifecycle, memory, NPC data
-├── Player/         # Drop-in FPS controller (WASD + mouse look)
+├── Player/         # Drop-in third-person controller (WASD + orbit camera)
 ├── World/          # Building, prop, NPC, interior builders + IAssetMapper
 ├── UI/             # Built-in chat UI with Skills/Crons tabs
 ├── Validation/     # CityDef audit pipeline

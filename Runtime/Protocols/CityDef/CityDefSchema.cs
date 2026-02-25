@@ -76,6 +76,9 @@ namespace OpenClawWorlds.Protocols
     {
         public string prefab;
         public string name;
+        public string role;
+        public string greeting;
+        public string personality;
         public float x;
         public float z;
         public float speed;

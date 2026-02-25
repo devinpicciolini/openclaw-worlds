@@ -138,7 +138,8 @@ namespace OpenClawWorlds.World
         // ── Wandering Townsfolk ──
 
         public static void SpawnTownsfolk(Transform root, string prefabName, string npcName,
-            Vector3 pos, float speed, float radius, TownMaterials m)
+            Vector3 pos, float speed, float radius, TownMaterials m,
+            string greeting = null, string[] offerings = null, string personality = null)
         {
             var npc = LoadOrCreateNPC(prefabName, npcName, pos, m, new Color(0.7f, 0.55f, 0.4f));
             npc.transform.SetParent(root);
@@ -152,6 +153,15 @@ namespace OpenClawWorlds.World
             tc.size = new Vector3(1f, 2f, 1f);
             tc.center = new Vector3(0, 1f, 0);
             tc.isTrigger = true;
+
+            // NPCData + Interactable so player can press E to chat
+            string greet = greeting ?? $"Hey there, I'm {npcName}.";
+            string[] offers = offerings ?? new[] { "Small talk", "Town gossip" };
+            var data = npc.AddComponent<NPCData>();
+            data.Init(npcName, greet, offers, isPersistent: false, personalityDesc: personality);
+
+            var interactable = npc.AddComponent<Interactable>();
+            interactable.Init(InteractableType.NPC, $"[E] Talk to {npcName}", Zone.Saloon);
 
             var wanderer = npc.AddComponent<WanderingNPC>();
             wanderer.Init(speed, radius, 3f, 8f);
