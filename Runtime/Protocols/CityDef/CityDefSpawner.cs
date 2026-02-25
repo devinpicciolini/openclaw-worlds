@@ -12,6 +12,9 @@ namespace OpenClawWorlds.Protocols
     /// </summary>
     public static class CityDefSpawner
     {
+        /// <summary>Fired when a town is built from a response. Args: (townName, summary).</summary>
+        public static event Action<string, string> OnCityBuilt;
+
         /// <summary>
         /// Optional: delegate to check if a world position is in a forbidden zone.
         /// Return true to skip placement at that position.
@@ -27,6 +30,72 @@ namespace OpenClawWorlds.Protocols
 
         /// <summary>Max distance from world origin — safety net for absurd LLM coordinates.</summary>
         public static float MaxWorldRadius = 800f;
+
+        /// <summary>
+        /// Check an AI response for ```citydef code blocks.
+        /// If found, parse and build each one. Returns summary or null.
+        /// </summary>
+        public static string ProcessResponse(string response, Vector3 spawnOrigin)
+        {
+            var blocks = ExtractCityDefBlocks(response);
+            if (blocks == null || blocks.Length == 0)
+                return null;
+
+            string summary = "";
+            foreach (var json in blocks)
+            {
+                try
+                {
+                    string result = Build(json, spawnOrigin, out Vector3 townPos);
+                    summary += (summary.Length > 0 ? "\n" : "") + result;
+                    spawnOrigin = townPos + new Vector3(100f, 0, 0); // offset next town
+                    OnCityBuilt?.Invoke(result, json);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[CityDef] Failed to build from response: {e.Message}");
+                    summary += $"\n[CityDef failed: {e.Message}]";
+                }
+            }
+
+            return summary;
+        }
+
+        static string[] ExtractCityDefBlocks(string response)
+        {
+            var results = new System.Collections.Generic.List<string>();
+            int searchFrom = 0;
+
+            while (searchFrom < response.Length)
+            {
+                // Look for ```citydef or ```json blocks that contain CityDef
+                int fenceStart = response.IndexOf("```citydef", searchFrom, StringComparison.OrdinalIgnoreCase);
+                if (fenceStart < 0)
+                    fenceStart = response.IndexOf("```json", searchFrom, StringComparison.OrdinalIgnoreCase);
+                if (fenceStart < 0) break;
+
+                int codeStart = response.IndexOf('\n', fenceStart);
+                if (codeStart < 0) break;
+                codeStart++;
+
+                int fenceEnd = response.IndexOf("```", codeStart);
+                if (fenceEnd < 0) break;
+
+                string json = response.Substring(codeStart, fenceEnd - codeStart).Trim();
+
+                // Only treat as CityDef if it looks like one (has streets or buildings)
+                if (json.Length > 20 &&
+                    (json.Contains("\"streets\"") || json.Contains("\"buildings\"")) &&
+                    json.Contains("\"name\""))
+                {
+                    results.Add(json);
+                }
+
+                searchFrom = fenceEnd + 3;
+            }
+
+            return results.Count > 0 ? results.ToArray() : null;
+        }
 
         static Vector3 V(float x, float y, float z) => new Vector3(x, y, z);
 

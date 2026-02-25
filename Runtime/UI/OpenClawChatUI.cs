@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using OpenClawWorlds.Gateway;
 using OpenClawWorlds.Agents;
+using OpenClawWorlds.Protocols;
 using OpenClawWorlds.World;
 
 namespace OpenClawWorlds.UI
@@ -163,6 +164,77 @@ namespace OpenClawWorlds.UI
 
             if (!string.IsNullOrEmpty(currentAgentId) && AgentPool.Instance != null)
                 AgentPool.Instance.CompleteTask(currentAgentId, response);
+
+            // ── Process protocols: CityDef, BehaviorDef, HotReload ──
+            ProcessProtocols(response);
+        }
+
+        void ProcessProtocols(string response)
+        {
+            // CityDef — spawn towns from ```citydef or ```json blocks
+            try
+            {
+                Vector3 spawnOrigin = Camera.main != null
+                    ? Camera.main.transform.position + Camera.main.transform.forward * 30f
+                    : Vector3.zero;
+                spawnOrigin.y = 0;
+
+                string citySummary = CityDefSpawner.ProcessResponse(response, spawnOrigin);
+                if (citySummary != null)
+                {
+                    lines.Add(new ChatLine
+                    {
+                        speaker = "System",
+                        text = citySummary,
+                        color = new Color(0.4f, 1f, 0.4f)
+                    });
+                    Debug.Log($"[OpenClawChat] CityDef: {citySummary}");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[OpenClawChat] CityDef processing failed: {e.Message}");
+            }
+
+            // BehaviorDef — weather, lighting, physics, particles
+            try
+            {
+                string behaviorSummary = BehaviorEngine.ProcessResponse(response);
+                if (behaviorSummary != null)
+                {
+                    lines.Add(new ChatLine
+                    {
+                        speaker = "System",
+                        text = behaviorSummary,
+                        color = new Color(0.4f, 1f, 0.4f)
+                    });
+                    Debug.Log($"[OpenClawChat] BehaviorDef: {behaviorSummary}");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[OpenClawChat] BehaviorDef processing failed: {e.Message}");
+            }
+
+            // HotReload — C# code blocks compile live in the editor
+            try
+            {
+                string hotReloadSummary = HotReloadBridge.ProcessResponse(response);
+                if (hotReloadSummary != null)
+                {
+                    lines.Add(new ChatLine
+                    {
+                        speaker = "System",
+                        text = hotReloadSummary,
+                        color = new Color(1f, 0.9f, 0.4f)
+                    });
+                    Debug.Log($"[OpenClawChat] HotReload: {hotReloadSummary}");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[OpenClawChat] HotReload processing failed: {e.Message}");
+            }
         }
 
         void HandleError(string err)
