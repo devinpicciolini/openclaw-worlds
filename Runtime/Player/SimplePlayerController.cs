@@ -69,6 +69,10 @@ namespace OpenClawWorlds.Player
         }
         static bool _inputBlocked;
 
+        // Singleton-lite: stores the active instance so other systems can find the player body
+        static SimplePlayerController _instance;
+        public static SimplePlayerController FindFirstInstance() => _instance;
+
         CharacterController cc;
         float yaw;
         float pitch = 20f; // start slightly looking down at the player
@@ -78,6 +82,8 @@ namespace OpenClawWorlds.Player
 
         void Awake()
         {
+            _instance = this;
+
             cc = GetComponent<CharacterController>();
             if (cc == null)
                 cc = gameObject.AddComponent<CharacterController>();
@@ -232,7 +238,7 @@ namespace OpenClawWorlds.Player
 
         void OnDisable()
         {
-            // Unlock cursor if controller is disabled
+            if (_instance == this) _instance = null;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }

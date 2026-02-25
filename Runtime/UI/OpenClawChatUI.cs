@@ -205,8 +205,22 @@ namespace OpenClawWorlds.UI
         NPCData FindNearestNPC(float maxRange, out float distance)
         {
             distance = float.MaxValue;
-            var cam = Camera.main;
-            Vector3 playerPos = cam != null ? cam.transform.position : transform.position;
+
+            // Use actual player body position, NOT the camera (which orbits behind in 3rd person)
+            Vector3 playerPos = transform.position;
+            var pc = SimplePlayerController.FindFirstInstance();
+            if (pc != null)
+                playerPos = pc.transform.position;
+            else
+            {
+                // Fallback: find any CharacterController
+#if UNITY_2023_1_OR_NEWER
+                var cc = FindAnyObjectByType<CharacterController>();
+#else
+                var cc = FindObjectOfType<CharacterController>();
+#endif
+                if (cc != null) playerPos = cc.transform.position;
+            }
 
 #if UNITY_2023_1_OR_NEWER
             var allNPCs = FindObjectsByType<NPCData>(FindObjectsSortMode.None);
