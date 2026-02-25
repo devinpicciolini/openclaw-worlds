@@ -139,9 +139,48 @@ See [Asset Pack Integration](Documentation~/asset-pack-integration.md) for the f
 
 ---
 
-## What Does It Actually Do?
+## Give Any NPC Its Own AI Agent
 
-The SDK implements three protocols that let AI agents control your Unity world:
+Add `NPCData` to any GameObject. That NPC now has its own AI agent with a unique personality, and persistent NPCs remember every conversation across sessions.
+
+```csharp
+// 1. Add identity to any GameObject
+var data = npc.AddComponent<NPCData>();
+data.Init("Bartender", "What'll it be, stranger?",
+    new[] { "Drinks", "Town gossip", "Rooms" },
+    isPersistent: true);
+
+// 2. When the player walks up, acquire an agent
+AgentPool.Instance.AcquireAgent(npcData,
+    onReady: (agentId) => { /* agent is live — start chatting */ },
+    onError: (err)     => { /* falls back to main agent */ });
+
+// 3. When the player walks away, release it
+AgentPool.Instance.ReleaseAgent();
+```
+
+**Persistent NPCs** (like a bartender or sheriff) get a dedicated agent ID and their own memory file at `~/.openclaw/npc-memories/bartender.md`. Every conversation is appended — they remember what you told them last week.
+
+**Disposable NPCs** (random townsfolk) share a rotating agent slot so you're not burning resources on background characters.
+
+The built-in `OpenClawChatUI` handles all of this automatically — it finds the nearest NPC, acquires an agent, and routes your messages. Press **Tab** to chat, press **Enter** to send.
+
+```
+~/.openclaw/
+├── npc-memories/
+│   ├── bartender.md       # Every conversation the bartender has had
+│   ├── sheriff.md         # Every conversation the sheriff has had
+│   └── shopkeeper.md      # Every conversation the shopkeeper has had
+└── workspace-npc-bartender/
+    ├── memory/            # Agent-local working memory
+    └── skills/            # Symlinked global skills
+```
+
+---
+
+## World Generation & Runtime Effects
+
+The SDK also implements three protocols that let agents control your Unity world:
 
 ### CityDef — JSON that builds worlds
 
@@ -173,7 +212,7 @@ using OpenClawWorlds.UI;
 gameObject.AddComponent<OpenClawChatUI>();
 ```
 
-It talks to whatever agent is configured in your `ai_config.json`. Replace it with your own UI when you're ready for production.
+It auto-detects nearby NPCs and routes messages to their agent. If there's no NPC, it talks to your main agent from `ai_config.json`. Replace it with your own UI when you're ready for production.
 
 ---
 
@@ -246,33 +285,6 @@ ZoneTrigger.OnZoneEntered += (zone) => UpdateMinimap(zone);
 ### TARDIS Interiors
 
 Building interiors are 3.5x larger than the exterior — spacious from inside, proportional from outside. Each `InteriorStyle` gets auto-generated furniture: bars and stools in saloons, pews and altars in churches, anvils and forges in smithies, jail cells with bars in the sheriff's office. 12 fully furnished interior styles.
-
-### Persistent NPC Memory
-
-Persistent NPCs get dedicated agent IDs and memory files that survive between sessions:
-
-```
-~/.openclaw/
-├── npc-memories/
-│   ├── bartender.md       # Every conversation the bartender has had
-│   ├── sheriff.md         # Every conversation the sheriff has had
-│   └── shopkeeper.md      # Every conversation the shopkeeper has had
-└── workspace-npc-bartender/
-    ├── memory/            # Agent-local working memory
-    └── skills/            # Symlinked global skills
-```
-
-### Agent Lifecycle
-
-```csharp
-AgentPool.PrimaryAgentId = "my-agent";
-
-AgentPool.Instance.AcquireAgent(npcData,
-    onReady: (agentId) => { /* agent is live, send messages */ },
-    onError: (err)     => { /* connection or creation failed */ });
-
-AgentPool.Instance.ReleaseAgent();  // player walked away
-```
 
 ---
 
