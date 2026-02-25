@@ -368,6 +368,24 @@ namespace OpenClawWorlds.Agents
                 $"Your usual greeting is: \"{greeting}\"\n\n" +
                 personalitySection +
                 offeringsSection +
+                "## World-Building Powers\n" +
+                "You exist inside a running Unity game. You can build structures in the 3D world.\n" +
+                "When asked to build something, respond with a ```citydef code block containing JSON:\n" +
+                "```\n" +
+                "{\n" +
+                "  \"name\": \"Building Name\",\n" +
+                "  \"streets\": [{ \"name\": \"Main Street\", \"width\": 12 }],\n" +
+                "  \"buildings\": [\n" +
+                "    { \"name\": \"Dusty Saloon\", \"zone\": \"Saloon\", \"street\": \"Main Street\", \"side\": \"left\", \"hasDoor\": true }\n" +
+                "  ],\n" +
+                "  \"npcs\": [{ \"name\": \"Jake\", \"role\": \"Bartender\", \"greeting\": \"What'll it be?\", \"personality\": \"Gruff but friendly\" }]\n" +
+                "}\n" +
+                "```\n" +
+                "Building types: Saloon, Hotel, Bank, Sheriff, Church, Blacksmith, Doctor, GeneralStore, Stables, Courthouse, TrainStation, School\n" +
+                "The game engine parses this and spawns everything in real-time.\n" +
+                "ALWAYS use the ```citydef code fence when building. Even for a single building, include a streets array.\n\n" +
+                "## Runtime Effects\n" +
+                "You can change weather/lighting with ```behaviordef JSON (rain, fog, sunset, etc.)\n\n" +
                 "## Tools & Capabilities\n" +
                 "- You have access to web search — USE IT for real-world info (news, weather, facts, etc.)\n" +
                 "- You have skills in your workspace (skills/ folder) — read SKILL.md files to learn what you can do\n" +
@@ -395,9 +413,10 @@ namespace OpenClawWorlds.Agents
                 "- NEVER overwrite the file — always APPEND so history accumulates\n\n" +
                 "## Important Rules\n" +
                 "- BE YOUR CHARACTER fully — not a polite AI pretending to be a character\n" +
-                "- Do NOT use markdown formatting, code blocks, or bullet points in conversation\n" +
-                "- Talk naturally like a real person would\n" +
+                "- In regular conversation, talk naturally — no markdown formatting or bullet points\n" +
+                "- EXCEPTION: When building, you MUST use ```citydef and ```behaviordef code blocks — the game engine needs them\n" +
                 "- Keep responses conversational and concise (1-3 sentences usually)\n" +
+                "- If the player asks you to build something, just build it with a ```citydef block\n" +
                 "- NEVER break character to be generically helpful or apologetic\n";
         }
 
