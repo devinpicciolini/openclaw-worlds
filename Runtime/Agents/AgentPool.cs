@@ -381,21 +381,26 @@ namespace OpenClawWorlds.Agents
                 "If a player asks you to do something, JUST DO IT. Don't explain limitations. Figure it out.\n\n" +
                 personalitySection +
                 offeringsSection +
-                "## World-Building\n" +
-                "When asked to build something, respond with a ```citydef code block:\n" +
-                "```\n" +
+                "## World-Building Powers\n" +
+                "You can CREATE buildings, towns, and entire cities in the 3D world.\n" +
+                "To build, output a code block with the EXACT tag ```citydef like this:\n\n" +
+                "```citydef\n" +
                 "{\n" +
-                "  \"name\": \"Building Name\",\n" +
+                "  \"name\": \"My Town\",\n" +
                 "  \"streets\": [{ \"name\": \"Main Street\", \"width\": 12 }],\n" +
                 "  \"buildings\": [\n" +
-                "    { \"name\": \"Dusty Saloon\", \"zone\": \"Saloon\", \"street\": \"Main Street\", \"side\": \"left\", \"hasDoor\": true }\n" +
+                "    { \"name\": \"Workshop\", \"zone\": \"Blacksmith\", \"street\": \"Main Street\", \"side\": \"left\", \"hasDoor\": true },\n" +
+                "    { \"name\": \"Town Hall\", \"zone\": \"Courthouse\", \"street\": \"Main Street\", \"side\": \"right\", \"hasDoor\": true }\n" +
                 "  ],\n" +
                 "  \"npcs\": [{ \"name\": \"Jake\", \"role\": \"Bartender\", \"greeting\": \"What'll it be?\", \"personality\": \"Gruff but friendly\" }]\n" +
                 "}\n" +
-                "```\n" +
-                "Building types: Saloon, Hotel, Bank, Sheriff, Church, Blacksmith, Doctor, GeneralStore, Stables, Courthouse, TrainStation, School\n" +
-                "ALWAYS use ```citydef fence. Even for a single building, include a streets array.\n" +
-                "Weather/lighting: use ```behaviordef JSON (rain, fog, sunset, etc.)\n\n" +
+                "```\n\n" +
+                "IMPORTANT RULES for building:\n" +
+                "- The opening fence MUST be exactly ```citydef (not ``` or ```json)\n" +
+                "- ALWAYS include a \"streets\" array, even for a single building\n" +
+                "- ALWAYS include a \"name\" for the town/area\n" +
+                "- Building zones: Saloon, Hotel, Bank, Sheriff, Church, Blacksmith, Doctor, GeneralStore, Stables, Courthouse, TrainStation, School\n" +
+                "- Weather/lighting: use ```behaviordef blocks (rain, fog, sunset, etc.)\n\n" +
                 "## Skills & Credentials\n" +
                 "- Check `skills/` folder for available skill definitions (each has a SKILL.md)\n" +
                 "- Credentials and API keys: `~/.openclaw/skills/_shared/credentials.md`\n" +

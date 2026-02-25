@@ -75,10 +75,12 @@ namespace OpenClawWorlds.Protocols
 
             while (searchFrom < response.Length)
             {
-                // Look for ```citydef or ```json blocks that contain CityDef
+                // Look for ```citydef first (preferred), then ```json, then plain ```
                 int fenceStart = response.IndexOf("```citydef", searchFrom, StringComparison.OrdinalIgnoreCase);
                 if (fenceStart < 0)
                     fenceStart = response.IndexOf("```json", searchFrom, StringComparison.OrdinalIgnoreCase);
+                if (fenceStart < 0)
+                    fenceStart = response.IndexOf("```", searchFrom);
                 if (fenceStart < 0) break;
 
                 int codeStart = response.IndexOf('\n', fenceStart);
@@ -90,16 +92,20 @@ namespace OpenClawWorlds.Protocols
 
                 string json = response.Substring(codeStart, fenceEnd - codeStart).Trim();
 
-                // Only treat as CityDef if it looks like one (has streets or buildings)
+                // Only treat as CityDef if it looks like one (has streets or buildings + name)
                 if (json.Length > 20 &&
                     (json.Contains("\"streets\"") || json.Contains("\"buildings\"")) &&
                     json.Contains("\"name\""))
                 {
+                    Debug.Log($"[CityDef] Found block ({json.Length} chars)");
                     results.Add(json);
                 }
 
                 searchFrom = fenceEnd + 3;
             }
+
+            if (results.Count == 0)
+                Debug.Log("[CityDef] No citydef blocks found in response");
 
             return results.Count > 0 ? results.ToArray() : null;
         }
