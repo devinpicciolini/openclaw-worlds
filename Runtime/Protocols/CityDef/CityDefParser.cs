@@ -23,11 +23,74 @@ namespace OpenClawWorlds.Protocols
 
         /// <summary>
         /// Fix common LLM JSON mistakes that JsonUtility can't handle:
-        /// trailing commas before closing brackets/braces.
+        /// trailing commas, single-line comments, unescaped newlines in strings,
+        /// single-quoted strings, and other common issues.
         /// </summary>
         public static string SanitizeJson(string json)
         {
+            // 1. Strip single-line comments (// ...)
+            json = Regex.Replace(json, @"//[^\n]*", "");
+
+            // 2. Strip multi-line comments (/* ... */)
+            json = Regex.Replace(json, @"/\*.*?\*/", "", RegexOptions.Singleline);
+
+            // 3. Replace single-quoted strings with double-quoted strings
+            //    Match 'text' that is not inside double quotes
+            json = Regex.Replace(json, @"(?<=[:,\[\{\s])\'([^']*?)\'", "\"$1\"");
+
+            // 4. Remove trailing commas before } or ]
             json = Regex.Replace(json, @",\s*([}\]])", "$1");
+
+            // 5. Fix unescaped newlines inside strings
+            //    Walk the string and escape \n that are inside quotes
+            var sb = new System.Text.StringBuilder(json.Length);
+            bool inStr = false;
+            for (int i = 0; i < json.Length; i++)
+            {
+                char c = json[i];
+                if (c == '"' && (i == 0 || json[i - 1] != '\\'))
+                {
+                    inStr = !inStr;
+                    sb.Append(c);
+                }
+                else if (inStr && c == '\n')
+                {
+                    sb.Append("\\n");
+                }
+                else if (inStr && c == '\r')
+                {
+                    // skip \r
+                }
+                else if (inStr && c == '\t')
+                {
+                    sb.Append("\\t");
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            json = sb.ToString();
+
+            // 6. Fix unterminated strings — if an odd number of unescaped quotes,
+            //    append a closing quote before the next } or ]
+            int quoteCount = 0;
+            for (int i = 0; i < json.Length; i++)
+            {
+                if (json[i] == '"' && (i == 0 || json[i - 1] != '\\'))
+                    quoteCount++;
+            }
+            if (quoteCount % 2 != 0)
+            {
+                // Find the last unmatched quote and close it
+                int lastQuote = json.LastIndexOf('"');
+                int nextClose = json.IndexOfAny(new[] { '}', ']' }, lastQuote);
+                if (nextClose > lastQuote)
+                    json = json.Insert(nextClose, "\"");
+                else
+                    json += "\"";
+            }
+
             return json;
         }
 

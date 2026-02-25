@@ -57,19 +57,8 @@ namespace OpenClawWorlds.World
             }
             else
             {
-                // Fallback: visible colored cube shell
-                var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cube.name = "FallbackShell";
-                cube.transform.SetParent(bld.transform);
-                cube.transform.localPosition = V(0, h / 2f, 0);
-                cube.transform.localScale = V(w, h, d);
-                var renderer = cube.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    var mat = TownMaterials.QuickMat(
-                        def.wallColor != default ? def.wallColor : new Color(0.6f, 0.45f, 0.3f));
-                    renderer.material = mat;
-                }
+                // Fallback: procedural building from primitives — no asset pack needed
+                BuildPrimitiveBuilding(bld.transform, def, w, h, d, m);
             }
 
             // Sign — only on fallback buildings
@@ -163,6 +152,167 @@ namespace OpenClawWorlds.World
             pl.intensity = 2f;
             pl.range = Mathf.Min(Mathf.Max(w, d) * 1.2f, 15f);
             pl.shadows = LightShadows.None;
+        }
+
+        // ── Procedural Primitive Building ──
+
+        static void BuildPrimitiveBuilding(Transform parent, BuildingDef def, float w, float h, float d, TownMaterials m)
+        {
+            Color wallColor = def.wallColor != default ? def.wallColor : new Color(0.65f, 0.55f, 0.4f);
+            Color roofColor = new Color(wallColor.r * 0.6f, wallColor.g * 0.4f, wallColor.b * 0.25f);
+            Color trimColor = new Color(wallColor.r * 0.7f, wallColor.g * 0.7f, wallColor.b * 0.7f);
+            Color doorColor = new Color(0.35f, 0.22f, 0.12f);
+            Color windowColor = new Color(0.5f, 0.7f, 0.9f, 0.7f);
+
+            Material wallMat = TownMaterials.QuickMat(wallColor);
+            Material roofMat = TownMaterials.QuickMat(roofColor);
+            Material trimMat = TownMaterials.QuickMat(trimColor);
+            Material doorMat = TownMaterials.QuickMat(doorColor);
+            Material windowMat = TownMaterials.QuickMat(windowColor);
+
+            var building = new GameObject("PrimitiveBuilding");
+            building.transform.SetParent(parent);
+            building.transform.localPosition = Vector3.zero;
+
+            // ── Main walls ──
+            var walls = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            walls.name = "Walls";
+            walls.transform.SetParent(building.transform);
+            walls.transform.localPosition = V(0, h / 2f, 0);
+            walls.transform.localScale = V(w, h, d);
+            PrimApplyMat(walls, wallMat);
+
+            // ── Foundation ──
+            float baseH = 0.2f;
+            var baseTrim = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            baseTrim.name = "Foundation";
+            baseTrim.transform.SetParent(building.transform);
+            baseTrim.transform.localPosition = V(0, baseH / 2f, 0);
+            baseTrim.transform.localScale = V(w + 0.15f, baseH, d + 0.15f);
+            PrimApplyMat(baseTrim, trimMat);
+
+            // ── Roof ──
+            float roofH = h * 0.2f;
+            float roofOverhang = 0.4f;
+            var roof = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            roof.name = "Roof";
+            roof.transform.SetParent(building.transform);
+            roof.transform.localPosition = V(0, h + roofH / 2f, 0);
+            roof.transform.localScale = V(w + roofOverhang, roofH, d + roofOverhang);
+            PrimApplyMat(roof, roofMat);
+
+            // ── Roof ridge ──
+            if (w > 6f)
+            {
+                var ridge = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                ridge.name = "RoofRidge";
+                ridge.transform.SetParent(building.transform);
+                ridge.transform.localPosition = V(0, h + roofH + 0.15f, 0);
+                ridge.transform.localScale = V(w * 0.4f, 0.3f, d + roofOverhang * 0.5f);
+                PrimApplyMat(ridge, roofMat);
+            }
+
+            // ── Door ──
+            float doorW = 1.2f, doorH = 2.2f;
+            float frontZ = d / 2f;
+            var door = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            door.name = "Door";
+            door.transform.SetParent(building.transform);
+            door.transform.localPosition = V(0, doorH / 2f, frontZ + 0.02f);
+            door.transform.localScale = V(doorW, doorH, 0.1f);
+            PrimApplyMat(door, doorMat);
+
+            // Door frame
+            var frame = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            frame.name = "DoorFrame";
+            frame.transform.SetParent(building.transform);
+            frame.transform.localPosition = V(0, doorH / 2f, frontZ + 0.03f);
+            frame.transform.localScale = V(doorW + 0.3f, doorH + 0.15f, 0.06f);
+            PrimApplyMat(frame, trimMat);
+
+            // ── Windows ──
+            int numWindows = Mathf.Max(1, Mathf.FloorToInt((w - 3f) / 3f));
+            float windowW = 0.8f, windowH = 1.0f;
+            float windowY = h * 0.55f;
+
+            for (int side = 0; side < 2; side++)
+            {
+                float zPos = side == 0 ? frontZ + 0.02f : -(frontZ + 0.02f);
+                for (int i = 0; i < numWindows; i++)
+                {
+                    float xOff = (i - (numWindows - 1) / 2f) * 3f;
+                    if (side == 0 && Mathf.Abs(xOff) < doorW + 0.5f) continue;
+
+                    var win = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    win.name = $"Window_{side}_{i}";
+                    win.transform.SetParent(building.transform);
+                    win.transform.localPosition = V(xOff, windowY, zPos);
+                    win.transform.localScale = V(windowW, windowH, 0.06f);
+                    PrimApplyMat(win, windowMat);
+
+                    var wf = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    wf.name = $"WindowFrame_{side}_{i}";
+                    wf.transform.SetParent(building.transform);
+                    wf.transform.localPosition = V(xOff, windowY, zPos + (side == 0 ? 0.01f : -0.01f));
+                    wf.transform.localScale = V(windowW + 0.2f, windowH + 0.2f, 0.04f);
+                    PrimApplyMat(wf, trimMat);
+                }
+            }
+
+            // ── Side windows ──
+            int sideWindows = Mathf.Max(1, Mathf.FloorToInt((d - 2f) / 3f));
+            for (int side = 0; side < 2; side++)
+            {
+                float xPos = side == 0 ? w / 2f + 0.02f : -(w / 2f + 0.02f);
+                for (int i = 0; i < sideWindows; i++)
+                {
+                    float zOff = (i - (sideWindows - 1) / 2f) * 3f;
+                    var win = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                    win.name = $"SideWindow_{side}_{i}";
+                    win.transform.SetParent(building.transform);
+                    win.transform.localPosition = V(xPos, windowY, zOff);
+                    win.transform.localScale = V(0.06f, windowH, windowW);
+                    PrimApplyMat(win, windowMat);
+                }
+            }
+
+            // ── Awning / porch overhang ──
+            if (def.hasDoor)
+            {
+                var awning = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                awning.name = "Awning";
+                awning.transform.SetParent(building.transform);
+                awning.transform.localPosition = V(0, doorH + 0.3f, frontZ + 1f);
+                awning.transform.localScale = V(w * 0.6f, 0.1f, 2f);
+                PrimApplyMat(awning, roofMat);
+
+                for (int i = -1; i <= 1; i += 2)
+                {
+                    var post = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                    post.name = $"AwningPost_{i}";
+                    post.transform.SetParent(building.transform);
+                    post.transform.localPosition = V(w * 0.28f * i, doorH / 2f + 0.15f, frontZ + 1.8f);
+                    post.transform.localScale = V(0.12f, doorH / 2f + 0.15f, 0.12f);
+                    PrimApplyMat(post, trimMat);
+                }
+            }
+
+            // ── Chimney on larger buildings ──
+            if (w > 8f || def.zone == Zone.Saloon || def.zone == Zone.GeneralStore)
+            {
+                var chimney = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                chimney.name = "Chimney";
+                chimney.transform.SetParent(building.transform);
+                chimney.transform.localPosition = V(w * 0.35f, h + roofH + 0.6f, 0);
+                chimney.transform.localScale = V(0.7f, 1.2f, 0.7f);
+                PrimApplyMat(chimney, trimMat);
+            }
+        }
+
+        static void PrimApplyMat(GameObject go, Material mat)
+        {
+            var r = go.GetComponent<Renderer>();
+            if (r != null) r.material = mat;
         }
 
         static void AddBuildingSign(GameObject bld, BuildingDef def, float h, float frontZ)

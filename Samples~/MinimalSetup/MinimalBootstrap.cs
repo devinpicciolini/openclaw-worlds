@@ -3,6 +3,7 @@ using OpenClawWorlds;
 using OpenClawWorlds.Gateway;
 using OpenClawWorlds.Agents;
 using OpenClawWorlds.World;
+using OpenClawWorlds.Player;
 using OpenClawWorlds.UI;
 
 namespace OpenClawWorlds.Samples
@@ -44,8 +45,8 @@ namespace OpenClawWorlds.Samples
             // 2. Build a simple ground plane
             BuildGround();
 
-            // 3. Position the camera
-            SetupCamera();
+            // 3. Spawn the player (WASD movement)
+            SpawnPlayer();
 
             // 4. Spawn one NPC with an agent
             SpawnNPC();
@@ -70,15 +71,32 @@ namespace OpenClawWorlds.Samples
                 renderer.material = TownMaterials.QuickMat(new Color(0.4f, 0.35f, 0.25f));
         }
 
-        void SetupCamera()
+        void SpawnPlayer()
         {
+            var player = new GameObject("Player");
+            player.transform.position = new Vector3(0, 0.1f, -2f);
+
+            // Visible capsule body
+            var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            body.name = "PlayerBody";
+            body.transform.SetParent(player.transform);
+            body.transform.localPosition = new Vector3(0, 1f, 0);
+            body.transform.localScale = new Vector3(0.4f, 0.8f, 0.4f);
+            // Remove the capsule's default collider (CharacterController handles collision)
+            var bodyCol = body.GetComponent<Collider>();
+            if (bodyCol != null) Destroy(bodyCol);
+            var r = body.GetComponent<Renderer>();
+            if (r != null) r.material = TownMaterials.QuickMat(new Color(0.3f, 0.5f, 0.8f));
+
+            // WASD controller
+            player.AddComponent<SimplePlayerController>();
+
+            // Camera setup
             var cam = Camera.main;
             if (cam != null)
-            {
-                cam.transform.position = new Vector3(0, 2f, -3f);
-                cam.transform.rotation = Quaternion.Euler(15, 0, 0);
                 cam.backgroundColor = new Color(0.15f, 0.18f, 0.25f);
-            }
+
+            Debug.Log("[MinimalBootstrap] Player spawned with WASD controls. Right-click to look around.");
         }
 
         void SpawnNPC()

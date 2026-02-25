@@ -94,7 +94,7 @@ That's it. You're done.
 
 ## Asset Packs (Optional)
 
-The SDK works with **zero art assets** out of the box. Buildings are colored cubes, NPCs are capsules, street lamps are cylinders with point lights. It's not pretty, but it works — you can prototype an entire AI-powered game with just primitives.
+The SDK works with **zero art assets** out of the box. Buildings are procedurally generated from primitives — colored walls, roofs with overhangs, doors with frames, windows on all sides, awnings with posts, chimneys, and text signs. NPCs are capsules, street lamps are cylinders with point lights. It's functional enough to prototype an entire AI-powered game before plugging in real art.
 
 When you want real visuals, plug in an asset pack:
 
@@ -210,6 +210,13 @@ Agent writes C# code blocks, and they compile and run in the editor.
 
 The SDK ships with `OpenClawChatUI` — a zero-setup chat window. Press **Tab** to open, type a message, press **Enter** to send. The panel docks to the right side of the screen so you can see your scene while chatting.
 
+**Features:**
+- **Chat tab** — talk to the main agent or nearest NPC agent
+- **Skills tab** — live list of all available OpenClaw skills from the gateway
+- **Crons tab** — scheduled cron jobs and their status
+- **Quick action presets** — one-tap buttons for common requests ("Build me a small town", "Make it rain", etc.)
+- **CityDef audit loop** — validates agent JSON and auto-retries until it passes (up to 2 attempts)
+
 MinimalBootstrap creates it automatically. For your own scripts, add it to any GameObject:
 
 ```csharp
@@ -219,6 +226,23 @@ gameObject.AddComponent<OpenClawChatUI>();
 ```
 
 It auto-detects nearby NPCs and routes messages to their agent. If there's no NPC, it talks to your main agent from `ai_config.json`. Every response is automatically processed through all three protocols — if the agent returns CityDef JSON, a town appears; if it returns BehaviorDef, weather changes; if it returns C# code, it compiles live. Replace it with your own UI when you're ready for production.
+
+---
+
+## Built-in Player Controller
+
+The SDK includes `SimplePlayerController` — a drop-in first-person WASD + mouse-look controller. No prefab needed, just add it to a GameObject:
+
+```csharp
+using OpenClawWorlds.Player;
+
+gameObject.AddComponent<SimplePlayerController>();
+```
+
+- **WASD** to move, **Shift** to sprint, **Space** to jump
+- Always-on mouse look with cursor locking (standard FPS behavior)
+- Cursor automatically unlocks when chat is open, re-locks when closed
+- Auto-finds and attaches the scene camera
 
 ---
 
@@ -350,8 +374,9 @@ Runtime/
 ├── Gateway/        # WebSocket transport + JSON-RPC client
 ├── Protocols/      # CityDef, BehaviorDef, HotReload
 ├── Agents/         # Agent lifecycle, memory, NPC data
+├── Player/         # Drop-in FPS controller (WASD + mouse look)
 ├── World/          # Building, prop, NPC, interior builders + IAssetMapper
-├── UI/             # Built-in chat UI (Tab to chat)
+├── UI/             # Built-in chat UI with Skills/Crons tabs
 ├── Validation/     # CityDef audit pipeline
 └── Utilities/      # JSON parsing helpers
 
