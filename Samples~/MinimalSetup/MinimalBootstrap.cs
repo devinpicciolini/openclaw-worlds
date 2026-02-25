@@ -3,19 +3,20 @@ using OpenClawWorlds;
 using OpenClawWorlds.Gateway;
 using OpenClawWorlds.Agents;
 using OpenClawWorlds.World;
+using OpenClawWorlds.UI;
 
 namespace OpenClawWorlds.Samples
 {
     /// <summary>
     /// Minimal getting-started example.
-    /// Creates a floor, player, one NPC agent, and connects to the OpenClaw gateway.
-    /// Attach this to an empty GameObject in your scene and hit Play.
+    /// Creates a floor, one NPC agent, a chat UI, and connects to the OpenClaw gateway.
+    /// Attach this to an empty GameObject in your scene, hit Play, press Tab to chat.
     ///
     /// SETUP:
     /// 1. Install OpenClaw: curl -fsSL https://openclaw.ai/install.sh | bash
     /// 2. Run onboarding: openclaw onboard
     /// 3. Gateway runs on ws://127.0.0.1:18789 by default
-    /// 4. Hit Play in Unity
+    /// 4. Hit Play in Unity, press Tab to chat
     /// </summary>
     public class MinimalBootstrap : MonoBehaviour
     {
@@ -43,13 +44,19 @@ namespace OpenClawWorlds.Samples
             // 2. Build a simple ground plane
             BuildGround();
 
-            // 3. Spawn one NPC with an agent
+            // 3. Position the camera
+            SetupCamera();
+
+            // 4. Spawn one NPC with an agent
             SpawnNPC();
 
-            // 4. Connect to the gateway
+            // 5. Connect to the gateway
             ConnectGateway();
 
-            Debug.Log("[MinimalBootstrap] Setup complete. Walk up to the NPC to interact.");
+            // 6. Add the built-in chat UI (press Tab to open)
+            CreateChatUI();
+
+            Debug.Log("[MinimalBootstrap] Setup complete. Press Tab to chat!");
         }
 
         void BuildGround()
@@ -61,6 +68,17 @@ namespace OpenClawWorlds.Samples
             var renderer = floor.GetComponent<Renderer>();
             if (renderer != null)
                 renderer.material = TownMaterials.QuickMat(new Color(0.4f, 0.35f, 0.25f));
+        }
+
+        void SetupCamera()
+        {
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                cam.transform.position = new Vector3(0, 2f, -3f);
+                cam.transform.rotation = Quaternion.Euler(15, 0, 0);
+                cam.backgroundColor = new Color(0.15f, 0.18f, 0.25f);
+            }
         }
 
         void SpawnNPC()
@@ -115,6 +133,12 @@ namespace OpenClawWorlds.Samples
             clientGO.AddComponent<OpenClawClient>();
 
             Debug.Log($"[MinimalBootstrap] Connecting to gateway at {gatewayUrl}...");
+        }
+
+        void CreateChatUI()
+        {
+            var chatGO = new GameObject("OpenClawChat");
+            chatGO.AddComponent<OpenClawChatUI>();
         }
     }
 }
