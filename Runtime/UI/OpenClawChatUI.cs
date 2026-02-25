@@ -896,6 +896,20 @@ namespace OpenClawWorlds.UI
                 GUI.Label(new Rect(15, 40, 400, 30),
                     $"Press <b>{toggleKey}</b> to chat", hudStyle);
 
+                // Dashboard hint — lighter text under the Tab hint
+                {
+                    var dashHintStyle = new GUIStyle(hudStyle);
+                    dashHintStyle.fontSize = 12;
+                    dashHintStyle.normal.textColor = new Color(0.6f, 0.6f, 0.55f, 0.5f);
+
+                    var dashboard = OpenClawDashboard.Instance;
+                    var pool = AgentPool.Instance;
+                    int working = pool != null ? pool.WorkingCount : 0;
+                    string badge = working > 0 ? $"  <color=#FFD700>({working} working)</color>" : "";
+                    GUI.Label(new Rect(15, 62, 400, 24),
+                        $"Press <b>`</b> for dashboard{badge}", dashHintStyle);
+                }
+
                 // NPC interaction prompt — centered on screen
                 if (nearbyNPC != null)
                 {

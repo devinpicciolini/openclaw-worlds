@@ -227,17 +227,8 @@ namespace OpenClawWorlds.UI
                 return;
             }
 
-            // Bottom-left hint when closed
-            if (!isOpen)
-            {
-                InitStyles();
-                var pool = AgentPool.Instance;
-                int working = pool != null ? pool.WorkingCount : 0;
-                string badge = working > 0 ? $"  <color=#FFD700>({working} working)</color>" : "";
-                GUI.Label(new Rect(10, Screen.height - 30, 300, 25),
-                    $"[`] Dashboard{badge}", hintStyle);
-                return;
-            }
+            // Hint is now rendered by OpenClawChatUI (under the "Press Tab" HUD)
+            if (!isOpen) return;
 
             InitStyles();
 
