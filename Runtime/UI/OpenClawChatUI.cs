@@ -325,46 +325,16 @@ namespace OpenClawWorlds.UI
             string speaker = currentNPC != null ? currentNPC.npcName
                 : (AIConfig.Instance != null ? AIConfig.Instance.assistantName : "Agent");
 
-            // ── CityDef audit loop: validate before building ──
+            // ── CityDef audit: log warnings but always proceed to build ──
             string cityJson = ExtractCityDefJson(response);
             if (cityJson != null)
             {
                 var auditErrors = AuditCityDefBasic(cityJson);
-                if (auditErrors.Count > 0 && auditRetryCount < MaxAuditRetries)
+                if (auditErrors.Count > 0)
                 {
-                    auditRetryCount++;
-                    string errorList = string.Join("\n", auditErrors);
-                    Debug.LogWarning($"[OpenClawChat] CityDef audit failed (attempt {auditRetryCount}/{MaxAuditRetries}):\n{errorList}");
-
-                    lines.Add(new ChatLine
-                    {
-                        speaker = "System",
-                        text = $"Auditing town JSON... fixing {auditErrors.Count} issue(s) (attempt {auditRetryCount}/{MaxAuditRetries})",
-                        color = new Color(1f, 0.85f, 0.4f)
-                    });
-                    shouldScrollToBottom = true;
-
-                    // Send correction back to AI
-                    string correction = $"Your citydef JSON has {auditErrors.Count} error(s). Fix these and resend the COMPLETE corrected ```citydef block:\n{errorList}";
-                    var client = OpenClawClient.Instance;
-                    if (client != null && client.IsConnected)
-                    {
-                        var config = AIConfig.Instance;
-                        string prompt = config != null ? config.systemPrompt : "";
-                        var messages = new List<ChatMessage>
-                        {
-                            new ChatMessage("assistant", response),
-                            new ChatMessage("user", correction)
-                        };
-                        client.SendMessage(prompt, messages,
-                            onComplete: (retryResponse) => HandleResponse(retryResponse),
-                            onError: (err) => HandleError(err)
-                        );
-                        return; // wait for corrected response
-                    }
+                    string errorList = string.Join(", ", auditErrors);
+                    Debug.LogWarning($"[OpenClawChat] CityDef audit warnings (building anyway): {errorList}");
                 }
-                // Audit passed or max retries — proceed to build
-                auditRetryCount = 0;
             }
 
             // Strip code blocks from display
