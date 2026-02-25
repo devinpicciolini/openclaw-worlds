@@ -287,11 +287,11 @@ namespace OpenClawWorlds.UI
 
             InitStyles();
 
-            // Chat window
-            float w = 520f;
-            float h = 500f;
-            float x = (Screen.width - w) / 2f;
-            float y = (Screen.height - h) / 2f;
+            // Chat window — docked to the right so the scene is visible
+            float w = 380f;
+            float h = Screen.height - 40f;
+            float x = Screen.width - w - 15f;
+            float y = 20f;
 
             GUI.Box(new Rect(x, y, w, h), "", boxStyle);
 
