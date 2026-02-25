@@ -52,7 +52,7 @@ void HandleNPCInteract(Interactable interactable, GameObject actor)
     AgentPool.Instance.AcquireAgent(npcData,
         onReady: (agentId) => {
             Debug.Log($"Agent ready: {agentId}");
-            // Send messages via OpenClawClient.Instance.SendChat(...)
+            // Send messages via OpenClawClient.Instance.SendMessage(...)
         },
         onError: (err) => Debug.LogError(err)
     );

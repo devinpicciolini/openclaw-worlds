@@ -208,42 +208,26 @@ All builders (`BuildingBuilder`, `NPCBuilder`, `InteriorBuilder`) read from `Bui
 
 ### Search Paths
 
-Prefabs are resolved by trying each search path in order:
+By default, `PrefabLibrary.SearchPaths` is `{ "" }` — it looks in the root of `Resources/`. Configure it for your asset pack's folder layout:
 
 ```csharp
+// Example for POLYGON Western asset pack
 PrefabLibrary.SearchPaths = new string[] {
     "Western/Props/",
     "Western/Buildings/",
-    "Western/Environments/",
     "Western/Characters/",
-    "Western/Vehicles/",
-    "Western/Weapons/",
-    "Western/FX/",
-    "Starter/",
-    ""  // root of Resources
+    ""  // root of Resources as fallback
 };
 ```
 
-When you call `PrefabLibrary.Find("SM_Bld_Saloon_01")`, it tries:
+When you call `PrefabLibrary.Find("SM_Bld_Saloon_01")`, it tries each path in order:
 1. `Resources.Load("Western/Props/SM_Bld_Saloon_01")`
 2. `Resources.Load("Western/Buildings/SM_Bld_Saloon_01")`
-3. ... and so on through each path.
-
-Override `SearchPaths` for your asset pack's folder structure:
-
-```csharp
-PrefabLibrary.SearchPaths = new string[] {
-    "MyAssetPack/Buildings/",
-    "MyAssetPack/Characters/",
-    "MyAssetPack/Props/",
-    "MyAssetPack/Vehicles/",
-    ""
-};
-```
+3. `Resources.Load("SM_Bld_Saloon_01")`
 
 ### Texture Names
 
-The SDK applies texture atlas materials to spawned prefabs via `PrefabLibrary.FixMaterials()`. Configure the texture names for your asset pack:
+The SDK applies texture atlas materials to spawned prefabs via `PrefabLibrary.FixMaterials()`. By default, no texture names are set (materials are left as-is). Configure them for your asset pack:
 
 ```csharp
 // Primary texture atlas (applied to most prefabs)
@@ -253,7 +237,7 @@ PrefabLibrary.PrimaryTextureName = "PolygonWestern_Texture_01_A";
 PrefabLibrary.SecondaryTextureName = "PolygonStarter_Texture_01";
 ```
 
-These textures are loaded from `Resources` and applied as `_BaseMap` / `_MainTex` on a URP Lit material.
+These textures are loaded from `Resources` and applied as `_BaseMap` / `_MainTex` on a URP Lit material. If neither texture is found, materials are not modified.
 
 ### Skipping Material Fix
 

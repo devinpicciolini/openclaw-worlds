@@ -13,30 +13,37 @@ namespace OpenClawWorlds.World
     {
         static Vector3 V(float x, float y, float z) => new Vector3(x, y, z);
 
-        // ── Prefab Name Arrays (shared across PropBuilder & InteriorBuilder) ──
+        // ── Optional Prefab Name Arrays ──
+        //
+        // These are prefab names used for interior decoration. When prefabs aren't
+        // available (no asset pack installed), PrefabLibrary.Spawn returns null
+        // and the prop is silently skipped — fallback primitive geometry still works.
+        //
+        // Override these arrays to match your own asset pack's naming convention.
+        // The default names follow Synty Studios POLYGON naming (SM_Prop_*).
 
-        public static readonly string[] Bottles = {
+        public static string[] Bottles = {
             "SM_Prop_Bottle_01", "SM_Prop_Bottle_02", "SM_Prop_Bottle_03",
             "SM_Prop_Bottle_04", "SM_Prop_Bottle_05", "SM_Prop_Bottle_06", "SM_Prop_Bottle_07"
         };
-        public static readonly string[] BrokenBottles = {
+        public static string[] BrokenBottles = {
             "SM_Prop_Bottle_Broken_01", "SM_Prop_Bottle_Broken_02",
             "SM_Prop_Bottle_Broken_03", "SM_Prop_Bottle_Broken_04"
         };
-        public static readonly string[] BottleCandles = { "SM_Prop_Bottle_Candle_01", "SM_Prop_Bottle_Candle_02" };
-        public static readonly string[] PokerChips = { "SM_Prop_Poker_Chip_01", "SM_Prop_Poker_Chip_02", "SM_Prop_Poker_Chip_03" };
-        public static readonly string[] Cards = { "SM_Prop_Card_01", "SM_Prop_Card_02", "SM_Prop_Card_03" };
-        public static readonly string[] Sacks = { "SM_Prop_Sack_01", "SM_Prop_Sack_02", "SM_Prop_Sack_03", "SM_Prop_Sack_04" };
-        public static readonly string[] Baskets = { "SM_Prop_Basket_01", "SM_Prop_Basket_02", "SM_Prop_Basket_03" };
-        public static readonly string[] Ropes = { "SM_Prop_Rope_01", "SM_Prop_Rope_02", "SM_Prop_Rope_03" };
-        public static readonly string[] Tins = { "SM_Prop_Tin_01", "SM_Prop_Tin_02", "SM_Prop_Tin_03" };
-        public static readonly string[] FurRolls = { "SM_Prop_Fur_Roll_01", "SM_Prop_Fur_Roll_02", "SM_Prop_Fur_Roll_03" };
-        public static readonly string[] Cups = { "SM_Prop_Cup_01", "SM_Prop_Cup_02" };
-        public static readonly string[] Maps = { "SM_Prop_Map_01", "SM_Prop_Map_02" };
-        public static readonly string[] Barrels = { "SM_Prop_Barrel_01", "SM_Prop_Barrel_02" };
-        public static readonly string[] Suitcases = { "SM_Prop_Suitcase_01", "SM_Prop_Suitcase_02" };
-        public static readonly string[] Revolvers = { "SM_Wep_Revolver_01", "SM_Wep_Revolver_02" };
-        public static readonly string[] Shotguns = { "SM_Wep_Shotgun_01", "SM_Wep_Shotgun_02" };
+        public static string[] BottleCandles = { "SM_Prop_Bottle_Candle_01", "SM_Prop_Bottle_Candle_02" };
+        public static string[] PokerChips = { "SM_Prop_Poker_Chip_01", "SM_Prop_Poker_Chip_02", "SM_Prop_Poker_Chip_03" };
+        public static string[] Cards = { "SM_Prop_Card_01", "SM_Prop_Card_02", "SM_Prop_Card_03" };
+        public static string[] Sacks = { "SM_Prop_Sack_01", "SM_Prop_Sack_02", "SM_Prop_Sack_03", "SM_Prop_Sack_04" };
+        public static string[] Baskets = { "SM_Prop_Basket_01", "SM_Prop_Basket_02", "SM_Prop_Basket_03" };
+        public static string[] Ropes = { "SM_Prop_Rope_01", "SM_Prop_Rope_02", "SM_Prop_Rope_03" };
+        public static string[] Tins = { "SM_Prop_Tin_01", "SM_Prop_Tin_02", "SM_Prop_Tin_03" };
+        public static string[] FurRolls = { "SM_Prop_Fur_Roll_01", "SM_Prop_Fur_Roll_02", "SM_Prop_Fur_Roll_03" };
+        public static string[] Cups = { "SM_Prop_Cup_01", "SM_Prop_Cup_02" };
+        public static string[] Maps = { "SM_Prop_Map_01", "SM_Prop_Map_02" };
+        public static string[] Barrels = { "SM_Prop_Barrel_01", "SM_Prop_Barrel_02" };
+        public static string[] Suitcases = { "SM_Prop_Suitcase_01", "SM_Prop_Suitcase_02" };
+        public static string[] Revolvers = { "SM_Wep_Revolver_01", "SM_Wep_Revolver_02" };
+        public static string[] Shotguns = { "SM_Wep_Shotgun_01", "SM_Wep_Shotgun_02" };
 
         // ── Primitive Helpers ──
 

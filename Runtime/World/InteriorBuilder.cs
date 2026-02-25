@@ -9,6 +9,11 @@ namespace OpenClawWorlds.World
     /// Interiors use a "TARDIS" approach — the interior space is scaled up
     /// significantly so buildings feel spacious from inside.
     /// Only applies to fallback (non-prefab) buildings.
+    ///
+    /// Prefab furniture (via PropBuilder.PLocal) is optional — when prefabs
+    /// aren't available, those calls silently return null and are skipped.
+    /// Structural furniture (counters, forges, jail bars, stages) is built
+    /// from primitives and always renders regardless of asset pack.
     /// </summary>
     public static class InteriorBuilder
     {

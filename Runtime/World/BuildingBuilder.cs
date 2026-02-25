@@ -165,10 +165,38 @@ namespace OpenClawWorlds.World
         {
             if (def.zone == Zone.Church || def.zone == Zone.TrainStation) return;
 
+            // Try prefab sign first
             int variant = Mathf.Abs(def.name.GetHashCode()) % 20 + 1;
             string signName = $"SM_Bld_Sign_{variant:D2}";
             float signY = h * 0.7f;
-            PrefabLibrary.Spawn(signName, bld.transform, V(0, signY, frontZ));
+            var signGo = PrefabLibrary.Spawn(signName, bld.transform, V(0, signY, frontZ));
+            if (signGo != null) return;
+
+            // Fallback: simple text mesh sign
+            var sign = new GameObject("Sign");
+            sign.transform.SetParent(bld.transform);
+            sign.transform.localPosition = V(0, signY, frontZ + 0.05f);
+
+            // Sign board
+            var board = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            board.name = "SignBoard";
+            board.transform.SetParent(sign.transform);
+            board.transform.localPosition = Vector3.zero;
+            board.transform.localScale = V(Mathf.Min(def.name.Length * 0.25f + 0.5f, 4f), 0.6f, 0.08f);
+            var boardR = board.GetComponent<Renderer>();
+            if (boardR != null) boardR.material = TownMaterials.QuickMat(new Color(0.3f, 0.2f, 0.1f));
+
+            // Text
+            var textGo = new GameObject("SignText");
+            textGo.transform.SetParent(sign.transform);
+            textGo.transform.localPosition = V(0, 0, 0.06f);
+            var tm = textGo.AddComponent<TextMesh>();
+            tm.text = def.name;
+            tm.fontSize = 24;
+            tm.characterSize = 0.08f;
+            tm.anchor = TextAnchor.MiddleCenter;
+            tm.alignment = TextAlignment.Center;
+            tm.color = new Color(0.9f, 0.85f, 0.7f);
         }
     }
 }

@@ -14,29 +14,27 @@ namespace OpenClawWorlds
 
         /// <summary>
         /// Search paths tried in order when a short prefab name is used.
-        /// Override these for your asset pack layout.
+        /// Override these for your asset pack's folder structure.
+        /// Example for POLYGON Western: { "Western/Props/", "Western/Buildings/", "" }
         /// </summary>
-        public static string[] SearchPaths = {
-            "Western/Props/",
-            "Western/Buildings/",
-            "Western/Environments/",
-            "Western/Characters/",
-            "Western/Vehicles/",
-            "Western/Weapons/",
-            "Western/FX/",
-            "Starter/",
-            ""
-        };
+        public static string[] SearchPaths = { "" };
 
         // ─── Material Fix ──────────────────────────────────────────────
 
         static Material _primaryMat;
         static Material _secondaryMat;
 
-        /// <summary>Primary texture atlas name (loaded from Resources).</summary>
-        public static string PrimaryTextureName = "PolygonWestern_Texture_01_A";
-        /// <summary>Secondary/fallback texture atlas name.</summary>
-        public static string SecondaryTextureName = "PolygonStarter_Texture_01";
+        /// <summary>
+        /// Primary texture atlas name (loaded from Resources).
+        /// Set this to your asset pack's main texture atlas.
+        /// Example for POLYGON Western: "PolygonWestern_Texture_01_A"
+        /// </summary>
+        public static string PrimaryTextureName = "";
+        /// <summary>
+        /// Secondary/fallback texture atlas name.
+        /// Example for POLYGON Starter: "PolygonStarter_Texture_01"
+        /// </summary>
+        public static string SecondaryTextureName = "";
 
         static Material MakeRuntimeMat(Texture2D tex, string name)
         {
@@ -138,7 +136,7 @@ namespace OpenClawWorlds
                 if (prefab != null)
                 {
                     Cache[name] = prefab;
-                    PackCache[name] = prefix.StartsWith("Western/");
+                    PackCache[name] = SearchPaths.Length > 1 && System.Array.IndexOf(SearchPaths, prefix) == 0;
                     return prefab;
                 }
             }
