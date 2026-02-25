@@ -12,6 +12,57 @@ Agent: *each building has a furnished interior with a shopkeeper who remembers y
 
 ---
 
+## Quick Start
+
+### 1. Install OpenClaw
+
+```bash
+curl -fsSL https://openclaw.ai/install.sh | bash
+openclaw onboard
+```
+
+This installs OpenClaw and runs the onboarding wizard (API key, workspace, gateway setup). The gateway listens on `ws://127.0.0.1:18789` by default.
+
+### 2. Add the SDK to Unity
+
+Add to `Packages/manifest.json`:
+
+```json
+{
+  "dependencies": {
+    "com.openclaw.worlds": "https://github.com/devinpicciolini/openclaw-worlds.git"
+  }
+}
+```
+
+Or clone locally and reference by path: `"com.openclaw.worlds": "file:../openclaw-worlds"`
+
+### 3. Configure your gateway token
+
+Create `Assets/StreamingAssets/ai_config.json`:
+
+```json
+{
+  "gatewayToken": "your-token-here",
+  "gatewayWsUrl": "ws://127.0.0.1:18789",
+  "agentId": "your-agent-name",
+  "assistantName": "Silas"
+}
+```
+
+You can find your gateway token by running `openclaw doctor` or checking `~/.openclaw/openclaw.json`.
+
+### 4. Add MinimalBootstrap and hit Play
+
+1. Create an empty GameObject in your scene
+2. Attach `MinimalBootstrap` (from `Samples~/MinimalSetup/`)
+3. Hit Play
+4. **Press Tab to chat**
+
+That's it. MinimalBootstrap creates the ground, NPC, gateway connection, and a built-in chat UI automatically. You'll see "Connected to OpenClaw" in the top-left, and Tab opens the chat panel on the right side of the screen.
+
+---
+
 ## What Does It Actually Do?
 
 The SDK implements three protocols that let AI agents control your Unity world:
@@ -30,70 +81,6 @@ Agent writes C# code blocks, and they compile and run in the editor. The most da
 
 ---
 
-## Quick Start
-
-### 1. Install the package
-
-Add to your Unity project's `Packages/manifest.json`:
-
-```json
-{
-  "dependencies": {
-    "com.openclaw.worlds": "https://github.com/devinpicciolini/openclaw-worlds.git"
-  }
-}
-```
-
-Or clone locally and reference by path: `"com.openclaw.worlds": "file:../openclaw-worlds"`
-
-### 2. Install and start the OpenClaw gateway
-
-```bash
-curl -fsSL https://openclaw.ai/install.sh | bash
-openclaw onboard
-```
-
-This installs OpenClaw and runs the onboarding wizard (API key, workspace, daemon setup). The gateway listens on `ws://127.0.0.1:18789` by default.
-
-### 3. Connect from Unity
-
-```csharp
-using OpenClawWorlds.Gateway;
-
-// AIConfig must exist before OpenClawClient — it holds the connection settings.
-var configGO = new GameObject("AIConfig");
-var config = configGO.AddComponent<AIConfig>();
-config.gatewayWsUrl = "ws://127.0.0.1:18789";
-config.agentId = "default";
-
-// OpenClawClient reads from AIConfig.Instance and auto-connects.
-var clientGO = new GameObject("OpenClawClient");
-clientGO.AddComponent<OpenClawClient>();
-```
-
-Or skip the code and use `StreamingAssets/ai_config.json`:
-
-```json
-{
-  "gatewayToken": "your-token-here",
-  "gatewayWsUrl": "ws://127.0.0.1:18789",
-  "agentId": "default"
-}
-```
-
-### 4. Let agents build
-
-```csharp
-using OpenClawWorlds.Protocols;
-
-// Agent sends CityDef JSON -> town appears in your world
-string summary = CityDefSpawner.Build(cityDefJson, spawnOrigin, out Vector3 townPos);
-```
-
-See `Samples~/MinimalSetup/` for a complete working example — one scene, one NPC, one agent, nothing else.
-
----
-
 ## How It Works
 
 ```
@@ -101,7 +88,7 @@ See `Samples~/MinimalSetup/` for a complete working example — one scene, one N
 │                  Your Game                        │
 │  ┌───────────┐  ┌───────────┐  ┌──────────────┐  │
 │  │  Player   │  │  Chat UI  │  │  Game Logic  │  │
-│  │ Controller│  │  (yours)  │  │   (yours)    │  │
+│  │ Controller│  │(built-in) │  │   (yours)    │  │
 │  └─────┬─────┘  └─────┬─────┘  └──────┬───────┘  │
 │        │              │               │           │
 ├────────┼──────────────┼───────────────┼───────────┤
@@ -136,6 +123,22 @@ See `Samples~/MinimalSetup/` for a complete working example — one scene, one N
 │  (openclaw gateway)   │
 └──────────────────────┘
 ```
+
+---
+
+## Built-in Chat UI
+
+The SDK ships with `OpenClawChatUI` — a zero-setup IMGUI chat window. Press **Tab** to open, type a message, press **Enter** to send. The panel docks to the right so you can see your scene while chatting.
+
+MinimalBootstrap creates it automatically. For your own game, add it to any GameObject:
+
+```csharp
+using OpenClawWorlds.UI;
+
+gameObject.AddComponent<OpenClawChatUI>();
+```
+
+It talks to whatever agent is configured in `ai_config.json`. Replace it with your own UI when you're ready for production.
 
 ---
 
@@ -256,13 +259,20 @@ void HandleAgentResponse(string response)
 ### Gateway Connection
 
 ```csharp
-// Option A: AIConfig MonoBehaviour (recommended)
+// Option A: StreamingAssets/ai_config.json (recommended)
+{
+  "gatewayToken": "your-token",
+  "gatewayWsUrl": "ws://127.0.0.1:18789",
+  "agentId": "your-agent",
+  "assistantName": "Silas"
+}
+
+// Option B: AIConfig MonoBehaviour
 var config = gameObject.AddComponent<AIConfig>();
 config.gatewayWsUrl = "ws://127.0.0.1:18789";
 config.gatewayToken = "your-token";
 config.agentId = "default";
 
-// Option B: StreamingAssets/ai_config.json (auto-loaded)
 // Option C: Set values in the Unity Inspector
 ```
 
@@ -303,6 +313,7 @@ Runtime/
 ├── Protocols/      # CityDef, BehaviorDef, HotReload bridges
 ├── Agents/         # Agent lifecycle, memory, NPC data
 ├── World/          # Building, prop, NPC, interior builders + IAssetMapper
+├── UI/             # Built-in chat UI (OpenClawChatUI)
 ├── Validation/     # CityDef audit pipeline
 └── Utilities/      # JSON parsing helpers
 
