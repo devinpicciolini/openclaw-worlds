@@ -57,6 +57,8 @@ namespace OpenClawWorlds.Gateway
                     gatewayWsUrl = cfg.gatewayWsUrl;
                 if (!string.IsNullOrEmpty(cfg.agentId))
                     agentId = cfg.agentId;
+                if (!string.IsNullOrEmpty(cfg.assistantName))
+                    assistantName = cfg.assistantName;
             }
             catch (System.Exception e)
             {
@@ -70,6 +72,7 @@ namespace OpenClawWorlds.Gateway
             public string gatewayToken;
             public string gatewayWsUrl;
             public string agentId;
+            public string assistantName;
         }
     }
 }
