@@ -31,9 +31,9 @@ namespace OpenClawWorlds.Samples
 
         [Header("NPC")]
         [Tooltip("Name of the demo NPC")]
-        public string npcName = "Shopkeeper";
+        public string npcName = "Engineer";
         [Tooltip("Greeting shown when the player approaches")]
-        public string npcGreeting = "Welcome! What can I help you with?";
+        public string npcGreeting = "Hey! What can I help you with?";
 
         void Start()
         {
