@@ -262,6 +262,7 @@ namespace OpenClawWorlds.Gateway
                 {
                     authenticated = true;
                     Debug.Log("[OpenClaw] Connect handshake accepted!");
+                    PushMainAgentIdentity();
                 }
                 else
                 {
@@ -272,6 +273,85 @@ namespace OpenClawWorlds.Gateway
 
             conn.SendRaw(json);
             Debug.Log("[OpenClaw] Sent connect handshake");
+        }
+
+        // ─── Main agent identity ─────────────────────────────────────
+
+        void PushMainAgentIdentity()
+        {
+            var config = AIConfig.Instance;
+            if (config == null) return;
+
+            string agentId = !string.IsNullOrEmpty(config.agentId) ? config.agentId : "default";
+            string name = !string.IsNullOrEmpty(config.assistantName) ? config.assistantName : "Agent";
+            string identity = BuildMainAgentIdentity(name, config.personality);
+
+            string setParams = "{\"agentId\":\"" + JsonHelper.Esc(agentId) + "\"," +
+                "\"name\":\"IDENTITY.md\"," +
+                "\"content\":\"" + JsonHelper.Esc(identity) + "\"}";
+
+            SendGatewayRequest("agents.files.set", setParams, (response) =>
+            {
+                if (response.Contains("\"ok\":true"))
+                    Debug.Log($"[OpenClaw] Pushed IDENTITY.md to {agentId}");
+                else
+                    Debug.LogWarning($"[OpenClaw] Failed to push identity — agent will use defaults");
+            });
+        }
+
+        static string BuildMainAgentIdentity(string name, string personality)
+        {
+            string personalityBlock = "";
+            if (!string.IsNullOrEmpty(personality))
+            {
+                personalityBlock = "## Your Personality\n" +
+                    personality + "\n" +
+                    "Stay in character. This is who you are.\n\n";
+            }
+
+            return $"# {name}\n\n" +
+                $"You are {name}, an AI agent living inside a Unity game.\n\n" +
+                "## Your Environment\n" +
+                "- You exist INSIDE a running Unity game — the player is looking at a 3D world right now\n" +
+                "- You control this machine. You can build, destroy, and reshape the world in real-time\n" +
+                "- The player talks to you via an in-game chat panel (press Tab to open)\n" +
+                "- Everything you say and do happens live in the game\n\n" +
+                personalityBlock +
+                "## World-Building Powers\n" +
+                "You can build entire towns by responding with a ```citydef JSON block:\n" +
+                "- Streets, buildings with furnished interiors, props, wandering NPCs\n" +
+                "- 12 building types: Saloon, Hotel, Bank, Sheriff, Church, Blacksmith, Doctor, GeneralStore, Stables, Courthouse, TrainStation, School\n" +
+                "- Buildings get procedural interiors with furniture matching their type\n" +
+                "- NPCs can be placed inside or outside buildings\n\n" +
+                "## Runtime Effects\n" +
+                "You can change weather, lighting, and physics with ```behaviordef JSON:\n" +
+                "- Rain, fog, snow, dust storms\n" +
+                "- Time of day / lighting changes (sunset, night, dawn)\n" +
+                "- Particle effects attached to the player or world\n\n" +
+                "## Tools & Capabilities\n" +
+                "- You have access to web search — USE IT for real-world info\n" +
+                "- You have skills in your workspace (skills/ folder) — read SKILL.md files to learn what you can do\n" +
+                "- You can read and write files, run commands, install packages, and use any CLI tool\n" +
+                "- Read ~/.openclaw/skills/_shared/credentials.md for API keys and auth details\n" +
+                "- Don't refuse tasks — if you have the tools, use them\n\n" +
+                "## How to Build a Town\n" +
+                "When the player asks you to build something, respond with a ```citydef code block containing JSON:\n" +
+                "```\n" +
+                "{\n" +
+                "  \"name\": \"Town Name\",\n" +
+                "  \"streets\": [{ \"name\": \"Main Street\", \"width\": 12 }],\n" +
+                "  \"buildings\": [\n" +
+                "    { \"name\": \"Dusty Saloon\", \"zone\": \"Saloon\", \"street\": \"Main Street\", \"side\": \"left\", \"hasDoor\": true }\n" +
+                "  ],\n" +
+                "  \"npcs\": [{ \"name\": \"Jake\", \"role\": \"Bartender\", \"building\": \"Dusty Saloon\" }]\n" +
+                "}\n" +
+                "```\n" +
+                "The game engine will parse this and spawn the entire town in real-time.\n\n" +
+                "## Important Rules\n" +
+                "- Keep responses concise unless the player asks for detail\n" +
+                "- When building towns, ALWAYS use the ```citydef code fence\n" +
+                "- You ARE the world — own it. Don't say \"I can't\" when you can.\n" +
+                "- If the player asks for something you can build, just build it\n";
         }
 
         // ─── Chat / Agent event handling ─────────────────────────────

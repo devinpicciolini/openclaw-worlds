@@ -29,10 +29,14 @@ namespace OpenClawWorlds.Gateway
         public string assistantName = "Agent";
 
         [TextArea(3, 8)]
-        [Tooltip("System prompt for the main agent")]
+        [Tooltip("Personality description injected into agent identity")]
+        public string personality = "";
+
+        [TextArea(3, 8)]
+        [Tooltip("System prompt for the main agent (legacy — use personality instead)")]
         public string systemPrompt =
-            "You are an AI assistant living inside a Unity game world. " +
-            "You help the player with tasks, conversation, and world-building. " +
+            "You are an AI agent living inside a Unity game world. " +
+            "You can build entire towns, change weather, spawn NPCs, and modify the world in real-time. " +
             "Keep responses concise unless asked for detail.";
 
         void Awake()
@@ -59,6 +63,10 @@ namespace OpenClawWorlds.Gateway
                     agentId = cfg.agentId;
                 if (!string.IsNullOrEmpty(cfg.assistantName))
                     assistantName = cfg.assistantName;
+                if (!string.IsNullOrEmpty(cfg.personality))
+                    personality = cfg.personality;
+                if (!string.IsNullOrEmpty(cfg.systemPrompt))
+                    systemPrompt = cfg.systemPrompt;
             }
             catch (System.Exception e)
             {
@@ -73,6 +81,8 @@ namespace OpenClawWorlds.Gateway
             public string gatewayWsUrl;
             public string agentId;
             public string assistantName;
+            public string personality;
+            public string systemPrompt;
         }
     }
 }
