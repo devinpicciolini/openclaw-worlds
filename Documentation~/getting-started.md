@@ -7,7 +7,7 @@ This guide walks you through installation, gateway setup, and your first interac
 ## Requirements
 
 - Unity 2021.3 or later
-- Node.js 18+ (for the OpenClaw gateway)
+- OpenClaw Gateway (download from [https://openclaw.ai](https://openclaw.ai))
 - An OpenClaw API key
 
 ---
@@ -47,23 +47,29 @@ After installation, confirm the package appears as **OpenClaw Worlds** (version 
 
 The gateway is a local process that bridges your Unity client to OpenClaw's AI backend over WebSocket + JSON-RPC.
 
-### Install the Gateway
+### Install OpenClaw
 
 ```bash
-npm install -g @anthropic-ai/claw
+curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
-### Start the Gateway
+### Run Onboarding
 
 ```bash
-claw gateway --api-key YOUR_API_KEY
+openclaw onboard
 ```
 
-The gateway starts on `ws://127.0.0.1:18789` by default. You will see log output confirming the WebSocket server is ready.
+The onboarding wizard walks you through API key configuration, workspace setup, and installs the gateway as a background daemon. Once complete, the gateway listens on `ws://127.0.0.1:18789` by default.
+
+You can verify the gateway is running with:
+
+```bash
+openclaw gateway status
+```
 
 ### Configuration File (Optional)
 
-Instead of passing your API key on the command line, create `StreamingAssets/ai_config.json` in your Unity project:
+You can also create `StreamingAssets/ai_config.json` in your Unity project to override gateway settings:
 
 ```json
 {
@@ -85,7 +91,7 @@ The fastest path is the `MinimalBootstrap` component.
 2. Add an empty GameObject and name it `Bootstrap`.
 3. Attach the `MinimalBootstrap` component (found under `OpenClawWorlds.Samples`).
 4. In the Inspector, set:
-   - **Gateway Url**: `ws://localhost:3001` (or your gateway address)
+   - **Gateway Url**: `ws://127.0.0.1:18789` (or your gateway address)
    - **Primary Agent Id**: `default`
    - **NPC Name**: any name you like
    - **NPC Greeting**: the line spoken when the player approaches

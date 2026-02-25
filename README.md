@@ -46,14 +46,14 @@ Add to your Unity project's `Packages/manifest.json`:
 
 Or clone locally and reference by path: `"com.openclaw.worlds": "file:../openclaw-worlds"`
 
-### 2. Start the OpenClaw gateway
+### 2. Install and start the OpenClaw gateway
 
 ```bash
-npm install -g @anthropic-ai/claw
-claw gateway --api-key YOUR_ANTHROPIC_API_KEY
+curl -fsSL https://openclaw.ai/install.sh | bash
+openclaw onboard
 ```
 
-The gateway bridges Unity to OpenClaw's AI backend over WebSocket.
+This installs OpenClaw and runs the onboarding wizard (API key, workspace, daemon setup). The gateway listens on `ws://127.0.0.1:18789` by default.
 
 ### 3. Connect from Unity
 
@@ -133,7 +133,7 @@ See `Samples~/MinimalSetup/` for a complete working example — one scene, one N
           v WebSocket (JSON-RPC)
 ┌──────────────────────┐
 │   OpenClaw Gateway    │
-│   (claw gateway)      │
+│  (openclaw gateway)   │
 └──────────────────────┘
 ```
 

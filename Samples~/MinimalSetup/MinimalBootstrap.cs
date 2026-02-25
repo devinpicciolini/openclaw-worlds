@@ -12,16 +12,16 @@ namespace OpenClawWorlds.Samples
     /// Attach this to an empty GameObject in your scene and hit Play.
     ///
     /// SETUP:
-    /// 1. Install the OpenClaw gateway: npm install -g @anthropic-ai/claw
-    /// 2. Start it: claw gateway --api-key YOUR_API_KEY
-    /// 3. Set the gateway URL below (default: ws://localhost:3001)
+    /// 1. Install OpenClaw: curl -fsSL https://openclaw.ai/install.sh | bash
+    /// 2. Run onboarding: openclaw onboard
+    /// 3. Gateway runs on ws://127.0.0.1:18789 by default
     /// 4. Hit Play in Unity
     /// </summary>
     public class MinimalBootstrap : MonoBehaviour
     {
         [Header("Gateway")]
         [Tooltip("WebSocket URL of the OpenClaw gateway")]
-        public string gatewayUrl = "ws://localhost:3001";
+        public string gatewayUrl = "ws://127.0.0.1:18789";
 
         [Header("Agent")]
         [Tooltip("Primary agent ID (must match a running OpenClaw agent)")]

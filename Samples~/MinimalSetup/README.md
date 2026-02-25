@@ -5,17 +5,17 @@ The simplest possible OpenClaw Worlds integration. One scene, one NPC, one agent
 ## Prerequisites
 
 1. **Unity 2021.3+** (LTS recommended)
-2. **OpenClaw Gateway** running locally:
+2. **OpenClaw** installed and onboarded:
    ```bash
-   npm install -g @anthropic-ai/claw
-   claw gateway --api-key YOUR_ANTHROPIC_API_KEY
+   curl -fsSL https://openclaw.ai/install.sh | bash
+   openclaw onboard
    ```
 
 ## Quick Start
 
 1. Create a new Unity scene
 2. Add an empty GameObject and attach `MinimalBootstrap.cs`
-3. Set the **Gateway URL** in the Inspector (default: `ws://localhost:3001`)
+3. Set the **Gateway URL** in the Inspector (default: `ws://127.0.0.1:18789`)
 4. Hit **Play**
 5. Walk up to the NPC capsule and press **E** to interact
 
