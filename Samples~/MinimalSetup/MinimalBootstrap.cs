@@ -157,6 +157,9 @@ namespace OpenClawWorlds.Samples
         {
             var chatGO = new GameObject("OpenClawChat");
             chatGO.AddComponent<OpenClawChatUI>();
+
+            var dashGO = new GameObject("OpenClawDashboard");
+            dashGO.AddComponent<OpenClawDashboard>();
         }
     }
 }
