@@ -234,7 +234,7 @@ namespace OpenClawWorlds.Protocols
             Time.timeScale = Mathf.Clamp(p.timescale, 0.1f, 3f);
 
             var go = new GameObject($"Behavior_{name}");
-            go.AddComponent<PhysicsRestorer>().Init(p.gravity, p.timescale);
+            go.AddComponent<PhysicsRestorer>();
 
             activeBehaviors[name] = go;
             string summary = $"Physics: gravity={p.gravity}, timescale={p.timescale}";
@@ -399,15 +399,6 @@ namespace OpenClawWorlds.Protocols
     /// <summary>Restores default physics when the behavior is destroyed.</summary>
     public class PhysicsRestorer : MonoBehaviour
     {
-        float origGravity;
-        float origTimescale;
-
-        public void Init(float gravity, float timescale)
-        {
-            origGravity = gravity;
-            origTimescale = timescale;
-        }
-
         void OnDestroy()
         {
             Physics.gravity = new Vector3(0, -9.81f, 0);

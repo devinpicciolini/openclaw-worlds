@@ -93,6 +93,7 @@ namespace OpenClawWorlds.World
                 case InteriorStyle.Clinic:   FurnishClinic(go, w, d, m); break;
                 case InteriorStyle.Smithy:   FurnishSmithy(go, w, d, m); break;
                 case InteriorStyle.Library:  FurnishLibrary(go, w, d, m); break;
+                case InteriorStyle.Theater:  FurnishTheater(go, w, d, m); break;
             }
         }
 
@@ -410,6 +411,40 @@ namespace OpenClawWorlds.World
             PropBuilder.PLocalRandom(PropBuilder.Maps, t, V(0.5f, 2f, -d/2 + 0.3f));
 
             PropBuilder.BoxMat(go, "Rug", V(0, 0.12f, d/6), V(w*0.5f, 0.01f, d*0.3f), m.FabricGreen);
+        }
+
+        // ── THEATER ──
+
+        static void FurnishTheater(GameObject go, float w, float d, TownMaterials m)
+        {
+            var t = go.transform;
+
+            PropBuilder.InteriorLantern(go, V(-w/2 + 0.4f, 2.2f, d/6), true, m);
+            PropBuilder.InteriorLantern(go, V(w/2 - 0.4f, 2.2f, d/6), false, m);
+            PropBuilder.InteriorLantern(go, V(-w/2 + 0.4f, 2.2f, -d/4), true, m);
+            PropBuilder.InteriorLantern(go, V(w/2 - 0.4f, 2.2f, -d/4), false, m);
+
+            // Stage platform
+            PropBuilder.BoxMat(go, "Stage", V(0, 0.35f, -d/3), V(w * 0.7f, 0.7f, d * 0.25f),
+                m.MakeMat(new Color(0.35f, 0.22f, 0.12f), 0.3f));
+
+            // Stage curtain backdrop
+            PropBuilder.BoxMat(go, "Curtain", V(0, 2f, -d/2 + 0.4f), V(w * 0.72f, 3f, 0.08f),
+                m.MakeMat(new Color(0.6f, 0.08f, 0.08f)));
+
+            // Audience seating rows
+            for (int row = 0; row < 4; row++)
+            {
+                float z = d/8 + row * 1.6f;
+                PropBuilder.Pew(go, V(-w/4, 0, z), m);
+                PropBuilder.Pew(go, V(w/4, 0, z), m);
+            }
+
+            // Stage spotlight
+            PropBuilder.AddPointLight(go.transform, V(0, 3.5f, -d/3), new Color(1f, 0.95f, 0.8f), 2f, 8f);
+
+            PropBuilder.BoxMat(go, "Rug", V(0, 0.12f, d/6), V(w * 0.6f, 0.01f, d * 0.35f),
+                m.MakeMat(new Color(0.5f, 0.08f, 0.08f)));
         }
     }
 }

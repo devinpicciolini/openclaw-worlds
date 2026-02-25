@@ -1,24 +1,40 @@
 # OpenClaw Worlds
 
-> Drop OpenClaw agents into any Unity project. They build worlds, do real work, and remember everything.
+**AI agents that live inside Unity. They build towns, run businesses, remember everything, and do real work.**
 
-A Unity Package Manager SDK that connects [OpenClaw](https://openclaw.ai) AI agents to your game. Agents communicate through structured protocols to spawn buildings, modify behaviors, hot-reload code, and maintain persistent memory — all at runtime.
+OpenClaw Worlds is a Unity SDK that connects [OpenClaw](https://openclaw.ai) AI agents to your game through structured JSON protocols. Agents don't just chat — they generate entire towns from JSON, modify weather and physics at runtime, hot-reload C# code, and accumulate persistent memory across sessions. All at runtime. All from conversation.
 
-## Features
+```
+You: "Build me a frontier town with a saloon, bank, and sheriff's office"
+Agent: *spawns a full town with buildings, interiors, NPCs, street lamps, and hitching posts*
+Agent: *each building has a furnished interior with a shopkeeper who remembers your conversations*
+```
 
-- **CityDef Protocol** — Agents generate JSON that spawns entire towns: buildings, interiors, NPCs, props
-- **BehaviorDef Protocol** — Agents modify runtime behaviors: weather, lighting, physics, particles
-- **C# Hot Reload** — Agents write code that compiles and runs in the live editor
-- **Persistent Memory** — NPCs remember every conversation across sessions
-- **Pluggable Assets** — Works with primitive geometry out of the box; plug in any art pack via `IAssetMapper`
-- **Event-Based Architecture** — Subscribe to interaction events instead of fighting singletons
-- **Zero Dependencies** — Pure C#, no third-party packages required
+---
+
+## What Does It Actually Do?
+
+The SDK implements three protocols that let AI agents control your Unity world:
+
+### CityDef — JSON that builds worlds
+
+An agent returns a JSON block, and an entire town appears in your scene. Streets, buildings with furnished interiors, props, wandering NPCs — all from one structured response. Buildings use real 3D prefabs when you have an asset pack, or colored primitives when you don't.
+
+### BehaviorDef — JSON that changes the rules
+
+Same idea, different protocol. Agent returns JSON, and the weather changes. Rain particles follow the player, fog rolls in, torches flicker, gravity shifts. No compilation, no scene reload — same-frame execution.
+
+### C# Hot Reload — code that compiles live
+
+Agent writes C# code blocks, and they compile and run in the editor. The most dangerous protocol. The most fun.
+
+---
 
 ## Quick Start
 
-### 1. Install the Package
+### 1. Install the package
 
-Add to your `manifest.json`:
+Add to your Unity project's `Packages/manifest.json`:
 
 ```json
 {
@@ -28,109 +44,113 @@ Add to your `manifest.json`:
 }
 ```
 
-Or clone locally and use `"com.openclaw.worlds": "file:../openclaw-worlds"`.
+Or clone locally and reference by path: `"com.openclaw.worlds": "file:../openclaw-worlds"`
 
-### 2. Start the Gateway
+### 2. Start the OpenClaw gateway
 
 ```bash
 npm install -g @anthropic-ai/claw
 claw gateway --api-key YOUR_ANTHROPIC_API_KEY
 ```
 
-### 3. Add to Your Scene
+The gateway bridges Unity to OpenClaw's AI backend over WebSocket.
+
+### 3. Connect from Unity
 
 ```csharp
 using OpenClawWorlds.Gateway;
 
-// Connect to the gateway
-AIConfig.GatewayUrl = "ws://localhost:3001";
-var client = gameObject.AddComponent<OpenClawClient>();
+// AIConfig must exist before OpenClawClient — it holds the connection settings.
+var configGO = new GameObject("AIConfig");
+var config = configGO.AddComponent<AIConfig>();
+config.gatewayWsUrl = "ws://127.0.0.1:18789";
+config.agentId = "default";
+
+// OpenClawClient reads from AIConfig.Instance and auto-connects.
+var clientGO = new GameObject("OpenClawClient");
+clientGO.AddComponent<OpenClawClient>();
 ```
 
-### 4. Let Agents Build
+Or skip the code and use `StreamingAssets/ai_config.json`:
+
+```json
+{
+  "gatewayToken": "your-token-here",
+  "gatewayWsUrl": "ws://127.0.0.1:18789",
+  "agentId": "default"
+}
+```
+
+### 4. Let agents build
 
 ```csharp
 using OpenClawWorlds.Protocols;
 
-// Agent sends CityDef JSON → town appears in your world
-CityDefSpawner.Build(cityDefJson, spawnOrigin, materials);
+// Agent sends CityDef JSON -> town appears in your world
+string summary = CityDefSpawner.Build(cityDefJson, spawnOrigin, out Vector3 townPos);
 ```
 
-See `Samples~/MinimalSetup/` for a complete working example.
+See `Samples~/MinimalSetup/` for a complete working example — one scene, one NPC, one agent, nothing else.
 
-## Architecture
+---
 
-```
-┌─────────────────────────────────────────────────┐
-│                  Your Game                       │
-│  ┌───────────┐  ┌───────────┐  ┌─────────────┐ │
-│  │ Player    │  │ Chat UI   │  │ Game Logic  │ │
-│  │ Controller│  │ (yours)   │  │ (yours)     │ │
-│  └─────┬─────┘  └─────┬─────┘  └──────┬──────┘ │
-│        │              │               │         │
-├────────┼──────────────┼───────────────┼─────────┤
-│        │     OpenClaw Worlds SDK      │         │
-│  ┌─────▼─────────────────────────────▼──────┐   │
-│  │              Gateway Layer                │   │
-│  │  OpenClawClient ←→ GatewayConnection     │   │
-│  └──────────────────┬───────────────────────┘   │
-│                     │                           │
-│  ┌──────────────────▼───────────────────────┐   │
-│  │              Protocols                    │   │
-│  │  CityDef    BehaviorDef    HotReload     │   │
-│  │  (JSON→Town) (JSON→FX)   (C#→Compile)   │   │
-│  └──────────────────┬───────────────────────┘   │
-│                     │                           │
-│  ┌──────────────────▼───────────────────────┐   │
-│  │              World Builders               │   │
-│  │  BuildingBuilder  PropBuilder  NPCBuilder │   │
-│  │  InteriorBuilder  TownStreamer            │   │
-│  └──────────────────┬───────────────────────┘   │
-│                     │                           │
-│  ┌──────────────────▼───────────────────────┐   │
-│  │              Agents                       │   │
-│  │  AgentPool (lifecycle, identity, memory)  │   │
-│  └──────────────────────────────────────────┘   │
-│                                                 │
-└─────────────────────────────────────────────────┘
-         │
-         ▼ WebSocket (JSON-RPC)
-┌─────────────────────┐
-│   OpenClaw Gateway   │
-│   (claw gateway)     │
-└─────────────────────┘
-```
-
-## Package Structure
+## How It Works
 
 ```
-Runtime/
-├── Core/           # Types, materials, prefab loading, animator hashes
-├── Gateway/        # WebSocket transport + JSON-RPC client
-├── Protocols/      # CityDef, BehaviorDef, HotReload bridges
-├── Agents/         # Agent lifecycle, memory, NPC data
-├── World/          # Building, prop, NPC, interior builders
-├── Validation/     # CityDef audit pipeline
-└── Utilities/      # JSON parsing helpers
-
-Samples~/
-├── MinimalSetup/   # One scene, one NPC, one agent
-└── WesternFrontier/# Reference implementation notes
-
-Documentation~/
-├── getting-started.md
-├── citydef-schema.md
-├── behaviordef-schema.md
-└── asset-pack-integration.md
+┌──────────────────────────────────────────────────┐
+│                  Your Game                        │
+│  ┌───────────┐  ┌───────────┐  ┌──────────────┐  │
+│  │  Player   │  │  Chat UI  │  │  Game Logic  │  │
+│  │ Controller│  │  (yours)  │  │   (yours)    │  │
+│  └─────┬─────┘  └─────┬─────┘  └──────┬───────┘  │
+│        │              │               │           │
+├────────┼──────────────┼───────────────┼───────────┤
+│        │     OpenClaw Worlds SDK      │           │
+│  ┌─────▼──────────────────────────────▼────────┐  │
+│  │              Gateway Layer                   │  │
+│  │  OpenClawClient <-> GatewayConnection       │  │
+│  └───────────────────┬─────────────────────────┘  │
+│                      │                            │
+│  ┌───────────────────▼─────────────────────────┐  │
+│  │              Protocols                       │  │
+│  │  CityDef     BehaviorDef     HotReload      │  │
+│  │  (JSON->Town) (JSON->FX)   (C#->Compile)    │  │
+│  └───────────────────┬─────────────────────────┘  │
+│                      │                            │
+│  ┌───────────────────▼─────────────────────────┐  │
+│  │              World Builders                  │  │
+│  │  BuildingBuilder  PropBuilder  NPCBuilder    │  │
+│  │  InteriorBuilder  TownStreamer               │  │
+│  └───────────────────┬─────────────────────────┘  │
+│                      │                            │
+│  ┌───────────────────▼─────────────────────────┐  │
+│  │              Agents                          │  │
+│  │  AgentPool (lifecycle, identity, memory)     │  │
+│  └─────────────────────────────────────────────┘  │
+│                                                   │
+└───────────────────────────────────────────────────┘
+          │
+          v WebSocket (JSON-RPC)
+┌──────────────────────┐
+│   OpenClaw Gateway    │
+│   (claw gateway)      │
+└──────────────────────┘
 ```
 
-## Key Concepts
+---
 
-### Pluggable Asset Packs
+## Core Concepts
 
-The SDK works with **no art assets** — buildings are colored cubes, NPCs are capsules. To upgrade visuals, implement `IAssetMapper`:
+### No Art Required (But Art Makes It Better)
+
+Every building, NPC, and prop has a **primitive geometry fallback**. Buildings are colored cubes, NPCs are capsules, street lamps are cylinders with point lights. You can prototype an entire game with zero art assets.
+
+When you're ready for real visuals, implement `IAssetMapper` to plug in any asset pack:
 
 ```csharp
+using OpenClawWorlds;
+using OpenClawWorlds.World;
+
 public class MyAssetMapper : DefaultAssetMapper
 {
     public override string GetBuildingPrefab(BuildingDef def)
@@ -138,74 +158,120 @@ public class MyAssetMapper : DefaultAssetMapper
         return def.zone switch
         {
             Zone.Saloon => "MyPack_Saloon_01",
-            Zone.Bank => "MyPack_Bank_01",
-            _ => null // falls back to primitive geometry
+            Zone.Bank   => "MyPack_Bank_01",
+            _           => null  // falls back to primitives
         };
     }
 }
 
-// Register it
+// Register before spawning any towns
 BuildingBuilder.AssetMapper = new MyAssetMapper();
 ```
 
 ### Event-Based Interactions
 
-No singletons required. Subscribe to events:
+No singletons to fight. Subscribe to static events:
 
 ```csharp
-Interactable.OnNPCInteract += (interactable, actor) => {
-    var npc = interactable.GetComponentInParent<NPCData>();
+// Player talks to an NPC
+Interactable.OnNPCInteract += (interactable, actor) =>
+{
+    var npc = interactable.GetComponent<NPCData>();
     OpenMyChatWindow(npc);
 };
 
-Interactable.OnDoorInteract += (interactable, actor) => {
+// Player enters a door
+Interactable.OnDoorInteract += (interactable, actor) =>
+{
     TeleportPlayer(interactable.TeleportPosition, interactable.TeleportYaw);
 };
 
-ZoneTrigger.OnZoneEntered += (zone) => {
+// Player enters a new zone
+ZoneTrigger.OnZoneEntered += (zone) =>
+{
     UpdateMinimap(zone);
 };
 ```
 
-### Agent Memory
+### TARDIS Interiors
 
-NPCs remember conversations across sessions. Memory persists to `~/.openclaw/npc-memories/`:
+Building interiors are 3.5x larger than the exterior — they feel spacious from inside while looking proportional from outside. Each `InteriorStyle` gets auto-generated furniture: bars and stools in saloons, pews and altars in churches, anvils and forges in smithies, jail cells with bars in the sheriff's office. There are 12 fully furnished interior styles.
+
+### Persistent NPC Memory
+
+Persistent NPCs get dedicated agent IDs and memory files that survive between sessions:
 
 ```
 ~/.openclaw/
 ├── npc-memories/
-│   ├── bartender.md      # Bartender's accumulated memories
-│   ├── sheriff.md        # Sheriff's accumulated memories
-│   └── shopkeeper.md     # Shopkeeper's accumulated memories
+│   ├── bartender.md       # Every conversation the bartender has had
+│   ├── sheriff.md         # Every conversation the sheriff has had
+│   └── shopkeeper.md      # Every conversation the shopkeeper has had
 └── workspace-npc-bartender/
-    ├── memory/           # Agent-local memory
-    └── skills/           # Symlinked global skills
+    ├── memory/            # Agent-local working memory
+    └── skills/            # Symlinked global skills
 ```
 
-## Configuration
+Disposable NPCs share a rotating pool slot that gets re-skinned per conversation.
 
-### Gateway
+### Agent Lifecycle
 
 ```csharp
-AIConfig.GatewayUrl = "ws://localhost:3001";    // Gateway WebSocket URL
-AIConfig.DefaultModel = "claude-sonnet-4-20250514";    // Model for agents
+using OpenClawWorlds.Agents;
+
+// Configure the agent pool
+AgentPool.PrimaryAgentId = "my-agent";
+AgentPool.DisposableSlotId = "npc-townfolk";
+
+// Acquire an agent when player approaches an NPC
+AgentPool.Instance.AcquireAgent(npcData,
+    onReady: (agentId) => { /* agent is live, send messages */ },
+    onError: (err)     => { /* connection or creation failed */ });
+
+// Release when player walks away
+AgentPool.Instance.ReleaseAgent();
 ```
 
-### Agent Pool
+### Processing Structured Responses
+
+Agent responses can contain embedded protocol blocks. The SDK detects and executes them:
 
 ```csharp
-AgentPool.PrimaryAgentId = "my-agent";          // Primary agent to copy auth from
-AgentPool.DisposableSlotId = "npc-townfolk";     // Shared slot for non-persistent NPCs
-AgentPool.CustomIdentityBuilder = (name, greeting) => "..."; // Custom identity template
-AgentPool.CustomBootstrap = (agentId) => { /* custom setup */ };
+using OpenClawWorlds.Protocols;
+
+void HandleAgentResponse(string response)
+{
+    // BehaviorDef blocks -> runtime effects (weather, lighting, physics)
+    string behaviorSummary = BehaviorEngine.ProcessResponse(response);
+
+    // C# code blocks -> compile and execute in the editor
+    string codeSummary = HotReloadBridge.ProcessResponse(response);
+}
+```
+
+---
+
+## Configuration Reference
+
+### Gateway Connection
+
+```csharp
+// Option A: AIConfig MonoBehaviour (recommended)
+var config = gameObject.AddComponent<AIConfig>();
+config.gatewayWsUrl = "ws://127.0.0.1:18789";
+config.gatewayToken = "your-token";
+config.agentId = "default";
+
+// Option B: StreamingAssets/ai_config.json (auto-loaded)
+// Option C: Set values in the Unity Inspector
 ```
 
 ### World Builders
 
 ```csharp
-BuildingBuilder.AssetMapper = new MyAssetMapper();  // Custom prefab mapping
-InteriorBuilder.InteriorScale = 3.5f;               // TARDIS interior multiplier
-InteriorActivator.ActivateDistance = 8f;             // Interior toggle distance
+BuildingBuilder.AssetMapper = new MyAssetMapper();   // Custom prefab mapping
+InteriorBuilder.InteriorScale = 3.5f;                // TARDIS interior multiplier
+InteriorActivator.ActivateDistance = 8f;              // Interior toggle distance
 PrefabLibrary.SearchPaths = new[] { "MyPack/", "" }; // Prefab search paths
 ```
 
@@ -214,22 +280,63 @@ PrefabLibrary.SearchPaths = new[] { "MyPack/", "" }; // Prefab search paths
 ```csharp
 CityDefSpawner.IsForbiddenZone = (pos) => /* your map boundaries */;
 CityDefSpawner.NudgeOrigin = (pos) => /* adjust spawn position */;
+CityDefSpawner.MaxWorldRadius = 800f;  // Safety net for absurd LLM coordinates
 ```
 
-## Protocols Reference
+### Agent Pool
 
-See the documentation folder for detailed schema references:
+```csharp
+AgentPool.PrimaryAgentId = "my-agent";
+AgentPool.DisposableSlotId = "npc-townfolk";
+AgentPool.CustomIdentityBuilder = (name, greeting) => "...";
+AgentPool.CustomBootstrap = (agentId) => { /* custom setup */ };
+```
 
-- **CityDef** — `Documentation~/citydef-schema.md` — JSON schema for town generation
-- **BehaviorDef** — `Documentation~/behaviordef-schema.md` — JSON schema for runtime behaviors
-- **Asset Integration** — `Documentation~/asset-pack-integration.md` — Plugging in art packs
+---
+
+## Package Structure
+
+```
+Runtime/
+├── Core/           # Enums, materials, prefab loading, animator hashes
+├── Gateway/        # WebSocket transport + JSON-RPC client
+├── Protocols/      # CityDef, BehaviorDef, HotReload bridges
+├── Agents/         # Agent lifecycle, memory, NPC data
+├── World/          # Building, prop, NPC, interior builders + IAssetMapper
+├── Validation/     # CityDef audit pipeline
+└── Utilities/      # JSON parsing helpers
+
+Samples~/
+├── MinimalSetup/   # One scene, one NPC, one agent -- start here
+└── WesternFrontier/# Full reference implementation notes
+
+Documentation~/
+├── getting-started.md        # Installation -> first agent
+├── citydef-schema.md         # Full CityDef JSON reference
+├── behaviordef-schema.md     # Full BehaviorDef JSON reference
+└── asset-pack-integration.md # Plugging in custom art packs
+```
+
+---
+
+## Documentation
+
+| Doc | What it covers |
+|-----|---------------|
+| **[Getting Started](Documentation~/getting-started.md)** | Installation, gateway setup, first interactive scene |
+| **[CityDef Schema](Documentation~/citydef-schema.md)** | Complete JSON schema for town generation |
+| **[BehaviorDef Schema](Documentation~/behaviordef-schema.md)** | JSON schema for runtime effects |
+| **[Asset Pack Integration](Documentation~/asset-pack-integration.md)** | How to plug in any 3D asset pack via `IAssetMapper` |
+
+---
 
 ## Requirements
 
 - Unity 2021.3 LTS or newer
 - .NET Standard 2.1
 - OpenClaw Gateway running (for agent features)
+- Zero third-party dependencies
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT -- see [LICENSE](LICENSE).

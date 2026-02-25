@@ -91,8 +91,8 @@ namespace OpenClawWorlds.Samples
             var data = npc.AddComponent<NPCData>();
             data.Init(npcName, npcGreeting,
                 new[] { "Chat", "Ask a question" },
-                agentId: null,
-                persistent: true);
+                agent: null,
+                isPersistent: true);
 
             // Agent pool (singleton)
             if (AgentPool.Instance == null)
@@ -103,10 +103,14 @@ namespace OpenClawWorlds.Samples
 
         void ConnectGateway()
         {
-            // Set gateway URL
-            AIConfig.GatewayUrl = gatewayUrl;
+            // AIConfig must exist before OpenClawClient — the gateway
+            // connection reads its URL and token from AIConfig.Instance.
+            var configGO = new GameObject("AIConfig");
+            var config = configGO.AddComponent<AIConfig>();
+            config.gatewayWsUrl = gatewayUrl;
+            config.agentId = primaryAgentId;
 
-            // Create the client
+            // Create the client (auto-connects via GatewayConnection)
             var clientGO = new GameObject("OpenClawClient");
             clientGO.AddComponent<OpenClawClient>();
 

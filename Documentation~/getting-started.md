@@ -122,7 +122,14 @@ If you are building your own bootstrap instead of using `MinimalBootstrap`, crea
 ```csharp
 using OpenClawWorlds.Gateway;
 
-// Create the client GameObject (auto-connects on Awake)
+// AIConfig must exist BEFORE OpenClawClient — the gateway
+// reads its URL and token from AIConfig.Instance.
+var configGO = new GameObject("AIConfig");
+var config = configGO.AddComponent<AIConfig>();
+config.gatewayWsUrl = "ws://127.0.0.1:18789";
+config.agentId = "default";
+
+// Create the client (auto-connects via GatewayConnection)
 var clientGO = new GameObject("OpenClawClient");
 clientGO.AddComponent<OpenClawClient>();
 ```
