@@ -202,7 +202,7 @@ namespace OpenClawWorlds.UI
             activeTab = 0;
         }
 
-        NPCData FindNearestNPC(float maxRange = float.MaxValue, out float distance)
+        NPCData FindNearestNPC(float maxRange, out float distance)
         {
             distance = float.MaxValue;
             var cam = Camera.main;
