@@ -38,6 +38,8 @@ The onboarding wizard walks you through:
 
 After onboarding, your gateway runs automatically. You can check it anytime with `openclaw doctor`.
 
+> **Troubleshooting:** If the SDK shows "Auth failed" or agents return API key errors, run `openclaw doctor` to diagnose. Common fixes: restart the gateway (`openclaw gateway restart`), or check that your agent has API keys configured (`openclaw agents` to list agents).
+
 ---
 
 ## Quick Start (5 minutes)
@@ -149,7 +151,8 @@ Add `NPCData` to any GameObject. That NPC now has its own AI agent with a unique
 var data = npc.AddComponent<NPCData>();
 data.Init("Bartender", "What'll it be, stranger?",
     new[] { "Drinks", "Town gossip", "Rooms" },
-    isPersistent: true);
+    isPersistent: true,
+    personalityDesc: "Gruff but kind-hearted. Suspicious of strangers. Loves whiskey.");
 
 // 2. When the player walks up, acquire an agent
 AgentPool.Instance.AcquireAgent(npcData,
@@ -159,6 +162,8 @@ AgentPool.Instance.AcquireAgent(npcData,
 // 3. When the player walks away, release it
 AgentPool.Instance.ReleaseAgent();
 ```
+
+Personality descriptions and offerings are automatically injected into the agent's IDENTITY.md — the AI knows who it is, what it offers, and how to behave.
 
 **Persistent NPCs** (like a bartender or sheriff) get a dedicated agent ID and their own memory file at `~/.openclaw/npc-memories/bartender.md`. Every conversation is appended — they remember what you told them last week.
 
@@ -326,8 +331,13 @@ PrefabLibrary.SearchPaths = new[] { "MyPack/", "" }; // Prefab search paths
 ```csharp
 AgentPool.PrimaryAgentId = "my-agent";
 AgentPool.DisposableSlotId = "npc-townfolk";
-AgentPool.CustomIdentityBuilder = (name, greeting) => "...";
 AgentPool.CustomBootstrap = (agentId) => { /* custom setup */ };
+
+// Override identity generation (basic)
+AgentPool.CustomIdentityBuilder = (name, greeting) => "...";
+
+// Override with full context (personality, offerings)
+AgentPool.CustomIdentityBuilderEx = (name, greeting, personality, offerings) => "...";
 ```
 
 ---
@@ -368,10 +378,23 @@ Documentation~/
 
 ---
 
+## Troubleshooting
+
+| Issue | Fix |
+|-------|-----|
+| "Connecting..." forever | Is the gateway running? Run `openclaw doctor` |
+| "Auth failed" in HUD | Check gateway token in `ai_config.json`. Run `openclaw doctor` |
+| Agent returns API key errors | Agent needs API keys: `openclaw agents add <id>` or copy `auth-profiles.json` from your main agent |
+| NPC chat goes to wrong agent | SDK auto-detects nearest NPC. Close and reopen chat (Tab) to re-detect |
+| Buildings spawn but are invisible | Check render pipeline. SDK auto-detects URP/Built-in/HDRP but needs shaders included in build |
+| "No shader available" error | Include shader variants in Project Settings > Graphics > Always Included Shaders |
+
+---
+
 ## Requirements
 
 - **Unity 2021.3 LTS** or newer (any render pipeline)
-- **.NET Standard 2.0** or .NET 4.x
+- **.NET Standard 2.1** or .NET Framework 4.x
 - **OpenClaw** installed and gateway running
 - Zero third-party dependencies
 
