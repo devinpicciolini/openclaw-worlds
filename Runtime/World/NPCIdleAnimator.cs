@@ -19,7 +19,14 @@ namespace OpenClawWorlds.World
         void Start()
         {
             animator = GetComponentInChildren<Animator>();
-            if (animator == null) return;
+            // Only drive the animator if it has a controller assigned.
+            // Without a controller (fallback capsule NPCs), disable this component
+            // to avoid spamming parameter-not-found warnings every 2 seconds.
+            if (animator == null || animator.runtimeAnimatorController == null)
+            {
+                enabled = false;
+                return;
+            }
             animator.applyRootMotion = false;
             ForceIdle();
             nextCheck = Time.time + Random.Range(0.5f, CheckInterval);
@@ -27,7 +34,7 @@ namespace OpenClawWorlds.World
 
         void ForceIdle()
         {
-            if (animator == null) return;
+            if (animator == null || animator.runtimeAnimatorController == null) return;
             animator.SetFloat(AnimHashes.MoveSpeed, 0f);
             animator.SetInteger(AnimHashes.CurrentGait, 0);
             animator.SetBool(AnimHashes.IsGrounded, true);

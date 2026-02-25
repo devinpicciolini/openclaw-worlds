@@ -426,14 +426,8 @@ namespace OpenClawWorlds.Protocols
                 interior = interior
             };
 
-            BuildingBuilder.Build(root, def, mat);
-
-            if (!string.IsNullOrEmpty(bdef.agentId))
-            {
-                var bldTransform = root.Find(bdef.name);
-                if (bldTransform != null)
-                    bldTransform.gameObject.AddComponent<BuildingAgent>().agentId = bdef.agentId;
-            }
+            // Add BuildingAgent BEFORE Build() so interior NPCs can find the agentId
+            BuildingBuilder.Build(root, def, mat, bdef.agentId);
 
             return true;
         }

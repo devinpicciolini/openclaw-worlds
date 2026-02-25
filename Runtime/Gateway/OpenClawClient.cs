@@ -18,6 +18,9 @@ namespace OpenClawWorlds.Gateway
         public static OpenClawClient Instance { get; private set; }
         public bool IsConnected => authenticated && conn != null && conn.IsOpen;
 
+        /// <summary>True if authentication was attempted but timed out.</summary>
+        public bool AuthTimedOut { get; private set; }
+
         GatewayConnection conn;
         bool authenticated;
         readonly Dictionary<string, Action<string>> pendingRequests = new Dictionary<string, Action<string>>();
@@ -59,9 +62,15 @@ namespace OpenClawWorlds.Gateway
             string name = config != null ? config.assistantName : "Agent";
 
             if (authenticated)
+            {
+                AuthTimedOut = false;
                 Debug.Log($"[OpenClaw] Ready to chat with {name}!");
+            }
             else
-                Debug.LogWarning("[OpenClaw] Auth timeout — check gateway logs");
+            {
+                AuthTimedOut = true;
+                Debug.LogWarning("[OpenClaw] Auth timeout — check gateway logs. Run 'openclaw doctor' in terminal.");
+            }
         }
 
         // ─── Public API ──────────────────────────────────────────────

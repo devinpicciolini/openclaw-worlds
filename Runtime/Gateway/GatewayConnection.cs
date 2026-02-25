@@ -157,7 +157,9 @@ namespace OpenClawWorlds.Gateway
 
             if (connectFailed || !connectDone)
             {
-                Debug.LogWarning($"[OpenClaw] WebSocket connect failed: {connectError}");
+                string hint = string.IsNullOrEmpty(connectError) ? "timed out" : connectError;
+                Debug.LogWarning($"[OpenClaw] WebSocket connect failed: {hint}. " +
+                    "Is the OpenClaw gateway running? Try 'openclaw doctor' in your terminal.");
                 connecting = false;
                 ws = null;
                 yield break;

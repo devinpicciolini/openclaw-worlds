@@ -48,8 +48,12 @@ namespace OpenClawWorlds.World
             floor.transform.SetParent(interiorRoot.transform);
             floor.transform.localPosition = V(0, 0.11f, 0);
             floor.transform.localScale = V(iw / 10f, 1, id / 10f);
-            var floorCollider = floor.GetComponent<MeshCollider>();
-            if (floorCollider != null) Object.Destroy(floorCollider);
+            // Replace MeshCollider with BoxCollider (more efficient, always works)
+            var floorMeshCol = floor.GetComponent<MeshCollider>();
+            if (floorMeshCol != null) Object.Destroy(floorMeshCol);
+            var floorBox = floor.AddComponent<BoxCollider>();
+            floorBox.size = new Vector3(10f, 0.1f, 10f); // Plane primitive is 10x10 at scale 1
+            floorBox.center = Vector3.zero;
             var floorMat = TownMaterials.QuickMat(new Color(0.35f, 0.22f, 0.12f), 0.3f);
             floor.GetComponent<Renderer>().material = floorMat;
 

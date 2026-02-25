@@ -17,12 +17,16 @@ namespace OpenClawWorlds.World
 
         static Vector3 V(float x, float y, float z) => new Vector3(x, y, z);
 
-        public static void Build(Transform root, BuildingDef def, TownMaterials m)
+        public static void Build(Transform root, BuildingDef def, TownMaterials m, string agentId = null)
         {
             var bld = new GameObject(def.name);
             bld.transform.SetParent(root);
             bld.transform.position = def.position;
             bld.transform.rotation = Quaternion.Euler(0f, def.rotation, 0f);
+
+            // Add BuildingAgent BEFORE interior NPCs are placed so they can read the agentId
+            if (!string.IsNullOrEmpty(agentId))
+                bld.AddComponent<BuildingAgent>().agentId = agentId;
 
             float w = def.size.x, h = def.size.y, d = def.size.z;
             float frontZ = d / 2f;

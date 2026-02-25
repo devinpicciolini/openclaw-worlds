@@ -47,6 +47,7 @@ namespace OpenClawWorlds.UI
         GUIStyle headerStyle;
         GUIStyle statusStyle;
         GUIStyle hudStyle;
+        GUIStyle closeHintStyle;
         bool stylesReady;
         Texture2D boxBgTex;
 
@@ -71,13 +72,28 @@ namespace OpenClawWorlds.UI
             }
         }
 
-        NPCData FindFirstNPC()
+        NPCData FindNearestNPC()
         {
+            var cam = Camera.main;
+            Vector3 playerPos = cam != null ? cam.transform.position : transform.position;
+
 #if UNITY_2023_1_OR_NEWER
-            return FindFirstObjectByType<NPCData>();
+            var allNPCs = FindObjectsByType<NPCData>(FindObjectsSortMode.None);
 #else
-            return FindObjectOfType<NPCData>();
+            var allNPCs = FindObjectsOfType<NPCData>();
 #endif
+            NPCData nearest = null;
+            float nearestDist = float.MaxValue;
+            foreach (var npc in allNPCs)
+            {
+                float dist = Vector3.Distance(playerPos, npc.transform.position);
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    nearest = npc;
+                }
+            }
+            return nearest;
         }
 
         void AcquireNPCAgent()
@@ -302,6 +318,11 @@ namespace OpenClawWorlds.UI
             hudStyle.fontSize = 16;
             hudStyle.richText = true;
             hudStyle.normal.textColor = Color.white;
+
+            closeHintStyle = new GUIStyle(GUI.skin.label);
+            closeHintStyle.fontSize = 11;
+            closeHintStyle.normal.textColor = new Color(0.5f, 0.5f, 0.5f);
+            closeHintStyle.alignment = TextAnchor.MiddleRight;
         }
 
         Texture2D MakeTex(int w, int h, Color col)
@@ -323,32 +344,45 @@ namespace OpenClawWorlds.UI
                 chatOpen = !chatOpen;
                 Event.current.Use(); // consume the event
 
-                if (chatOpen && currentNPC == null && !agentReady)
+                if (!chatOpen)
                 {
-                    currentNPC = FindFirstNPC();
-                    if (currentNPC != null)
+                    // Release current NPC agent when chat closes
+                    if (currentNPC != null && AgentPool.Instance != null)
+                        AgentPool.Instance.ReleaseAgent();
+                    currentNPC = null;
+                    currentAgentId = null;
+                    agentReady = false;
+                    CancelInvoke(nameof(AcquireNPCAgent));
+                    return;
+                }
+
+                // Re-detect nearest NPC every time chat opens
+                currentNPC = FindNearestNPC();
+                if (currentNPC != null)
+                {
+                    lines.Clear();
+                    lines.Add(new ChatLine
                     {
-                        lines.Clear();
-                        lines.Add(new ChatLine
-                        {
-                            speaker = currentNPC.npcName,
-                            text = currentNPC.greeting,
-                            color = new Color(0.4f, 0.8f, 1f)
-                        });
-                        AcquireNPCAgent();
-                    }
-                    else
+                        speaker = currentNPC.npcName,
+                        text = currentNPC.greeting,
+                        color = new Color(0.4f, 0.8f, 1f)
+                    });
+                    AcquireNPCAgent();
+                }
+                else
+                {
+                    var config = AIConfig.Instance;
+                    string name = config != null ? config.assistantName : "Agent";
+                    if (lines.Count == 0)
                     {
-                        var config = AIConfig.Instance;
-                        string name = config != null ? config.assistantName : "Agent";
                         lines.Add(new ChatLine
                         {
                             speaker = name,
                             text = "Hello! How can I help you?",
                             color = new Color(0.4f, 0.8f, 1f)
                         });
-                        agentReady = true;
                     }
+                    agentReady = true;
                 }
                 return;
             }
@@ -358,11 +392,15 @@ namespace OpenClawWorlds.UI
             {
                 InitStyles();
                 var client = OpenClawClient.Instance;
-                string connStatus = client != null && client.IsConnected
-                    ? "<color=#66ff66>Connected to OpenClaw</color>"
-                    : "<color=#ff6666>Connecting...</color>";
+                string connStatus;
+                if (client != null && client.IsConnected)
+                    connStatus = "<color=#66ff66>Connected to OpenClaw</color>";
+                else if (client != null && client.AuthTimedOut)
+                    connStatus = "<color=#ff6666>Auth failed — run 'openclaw doctor' in terminal</color>";
+                else
+                    connStatus = "<color=#ff6666>Connecting...</color>";
 
-                GUI.Label(new Rect(15, 15, 400, 30), connStatus, hudStyle);
+                GUI.Label(new Rect(15, 15, 500, 30), connStatus, hudStyle);
                 GUI.Label(new Rect(15, 40, 400, 30),
                     $"Press <b>{toggleKey}</b> to chat", hudStyle);
                 return;
@@ -385,12 +423,8 @@ namespace OpenClawWorlds.UI
             GUI.Label(new Rect(x, y + 8, w, 30), title, headerStyle);
 
             // Close hint
-            var closeStyle = new GUIStyle(GUI.skin.label);
-            closeStyle.fontSize = 11;
-            closeStyle.normal.textColor = new Color(0.5f, 0.5f, 0.5f);
-            closeStyle.alignment = TextAnchor.MiddleRight;
             GUI.Label(new Rect(x, y + 8, w - 15, 30),
-                $"{toggleKey} to close", closeStyle);
+                $"{toggleKey} to close", closeHintStyle);
 
             // Status
             if (!string.IsNullOrEmpty(statusText))

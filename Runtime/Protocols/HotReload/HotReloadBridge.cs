@@ -52,6 +52,11 @@ namespace OpenClawWorlds.Protocols
             if (blocks == null || blocks.Length == 0)
                 return null;
 
+#if !UNITY_EDITOR
+            // In builds, code blocks cannot be compiled — skip file writes entirely
+            Debug.Log("[HotReload] C# code blocks detected but cannot compile in builds.");
+            return $"Detected {blocks.Length} code block(s) — live reload only works in the Unity Editor.";
+#else
             if (!Directory.Exists(GeneratedFolder))
             {
                 Directory.CreateDirectory(GeneratedFolder);
@@ -83,6 +88,7 @@ namespace OpenClawWorlds.Protocols
 
             TriggerReload();
             return summary;
+#endif
         }
 
         static string[] ExtractCSharpBlocks(string response)

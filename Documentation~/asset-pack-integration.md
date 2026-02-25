@@ -74,17 +74,19 @@ public struct NPCTemplate
     public string[] offerings;  // Interaction menu options
     public float zFraction;     // Z offset as fraction of building depth
     public bool persistent;     // Persistent = dedicated agent with memory
+    public string personality;  // Optional personality description for agent identity
 }
 ```
 
-| Field        | Description                                                                         |
-|--------------|-------------------------------------------------------------------------------------|
-| `prefab`     | Prefab name resolved by `PrefabLibrary.Find()`. `null` = use fallback capsule.     |
-| `name`       | Display name shown in the interaction prompt (e.g., `"[E] Talk to Bartender"`).    |
-| `greeting`   | First line the NPC says when the player initiates a conversation.                  |
-| `offerings`  | Array of interaction options presented to the player (e.g., `["Chat", "Buy"]`).    |
-| `zFraction`  | Position offset inside the building as a fraction of depth. Negative = toward door. |
-| `persistent` | If `true`, the NPC gets a dedicated agent ID and persistent memory file.            |
+| Field         | Description                                                                         |
+|---------------|-------------------------------------------------------------------------------------|
+| `prefab`      | Prefab name resolved by `PrefabLibrary.Find()`. `null` = use fallback capsule.     |
+| `name`        | Display name shown in the interaction prompt (e.g., `"[E] Talk to Bartender"`).    |
+| `greeting`    | First line the NPC says when the player initiates a conversation.                  |
+| `offerings`   | Array of interaction options presented to the player (e.g., `["Chat", "Buy"]`).    |
+| `zFraction`   | Position offset inside the building as a fraction of depth. Negative = toward door. |
+| `persistent`  | If `true`, the NPC gets a dedicated agent ID and persistent memory file.            |
+| `personality` | Optional personality description injected into the agent identity. Example: `"Gruff but kind-hearted. Suspicious of strangers."` If null, the agent uses a generic personality template. |
 
 ---
 

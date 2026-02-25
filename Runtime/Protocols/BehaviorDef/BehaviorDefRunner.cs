@@ -327,7 +327,11 @@ namespace OpenClawWorlds.Protocols
 
             while (searchFrom < response.Length)
             {
+                // Try ```behaviordef first (explicit), then ```json with content heuristic
                 int fenceStart = response.IndexOf("```behaviordef", searchFrom, StringComparison.OrdinalIgnoreCase);
+                bool isExplicit = fenceStart >= 0;
+                if (fenceStart < 0)
+                    fenceStart = response.IndexOf("```json", searchFrom, StringComparison.OrdinalIgnoreCase);
                 if (fenceStart < 0) break;
 
                 int codeStart = response.IndexOf('\n', fenceStart);
@@ -338,8 +342,26 @@ namespace OpenClawWorlds.Protocols
                 if (fenceEnd < 0) break;
 
                 string json = response.Substring(codeStart, fenceEnd - codeStart).Trim();
+
                 if (json.Length > 5)
-                    results.Add(json);
+                {
+                    if (isExplicit)
+                    {
+                        results.Add(json);
+                    }
+                    else
+                    {
+                        // For ```json blocks, only treat as BehaviorDef if it has behavior markers
+                        // but NOT CityDef markers (those are handled by CityDefSpawner)
+                        bool hasBehaviorType = json.Contains("\"type\"") &&
+                            (json.Contains("\"particle\"") || json.Contains("\"light\"") ||
+                             json.Contains("\"physics\"") || json.Contains("\"fog\"") ||
+                             json.Contains("\"timer\"") || json.Contains("\"remove\""));
+                        bool isCityDef = json.Contains("\"streets\"") || json.Contains("\"buildings\"");
+                        if (hasBehaviorType && !isCityDef)
+                            results.Add(json);
+                    }
+                }
 
                 searchFrom = fenceEnd + 3;
             }

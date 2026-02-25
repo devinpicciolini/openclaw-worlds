@@ -22,6 +22,7 @@ namespace OpenClawWorlds
 
         /// <summary>
         /// Returns the correct lit shader for the current render pipeline.
+        /// Falls through: URP/Lit → URP/Simple Lit → Standard → Unlit/Color.
         /// Cached after first lookup.
         /// </summary>
         public static Shader LitShader
@@ -32,6 +33,12 @@ namespace OpenClawWorlds
                 _cachedShader = Shader.Find("Universal Render Pipeline/Lit");
                 if (_cachedShader == null) _cachedShader = Shader.Find("Universal Render Pipeline/Simple Lit");
                 if (_cachedShader == null) _cachedShader = Shader.Find("Standard");
+                if (_cachedShader == null)
+                {
+                    _cachedShader = Shader.Find("Unlit/Color");
+                    if (_cachedShader != null)
+                        Debug.LogWarning("[TownMaterials] No lit shader found — using Unlit/Color fallback. Buildings will appear flat-shaded.");
+                }
                 return _cachedShader;
             }
         }
@@ -39,7 +46,13 @@ namespace OpenClawWorlds
         /// <summary>Quick helper: create a solid-color material without a TownMaterials instance.</summary>
         public static Material QuickMat(Color color, float smoothness = 0.15f)
         {
-            var mat = new Material(LitShader);
+            var shader = LitShader;
+            if (shader == null)
+            {
+                Debug.LogError("[TownMaterials] No shader available at all. Check that your render pipeline shaders are included in the build.");
+                return new Material(Shader.Find("Hidden/InternalErrorShader")) { color = color };
+            }
+            var mat = new Material(shader);
             mat.SetColor("_BaseColor", color);
             mat.SetColor("_Color", color);
             mat.SetFloat("_Smoothness", smoothness);
@@ -61,10 +74,7 @@ namespace OpenClawWorlds
 
         public Material MakeMat(Color color, float smoothness = 0.15f, float metallic = 0f, Color? emission = null)
         {
-            var mat = new Material(LitShader);
-            mat.SetColor("_BaseColor", color);
-            mat.SetColor("_Color", color);
-            mat.SetFloat("_Smoothness", smoothness);
+            var mat = QuickMat(color, smoothness);
             mat.SetFloat("_Metallic", metallic);
             if (emission.HasValue)
             {

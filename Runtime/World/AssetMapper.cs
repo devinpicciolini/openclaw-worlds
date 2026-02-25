@@ -36,6 +36,13 @@ namespace OpenClawWorlds.World
         public string[] offerings;
         public float zFraction;
         public bool persistent;
+
+        /// <summary>
+        /// Optional personality description for the agent identity.
+        /// Example: "Gruff but kind-hearted. Suspicious of strangers."
+        /// If null, the agent uses the default generic personality template.
+        /// </summary>
+        public string personality;
     }
 
     /// <summary>

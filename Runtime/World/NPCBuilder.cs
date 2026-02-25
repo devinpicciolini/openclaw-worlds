@@ -37,7 +37,7 @@ namespace OpenClawWorlds.World
             string agentId = agent != null ? agent.agentId : null;
 
             var localPos = V(offsetX, 0, offsetZ);
-            SpawnNPC(building, tmpl.prefab, tmpl.name, tmpl.greeting, tmpl.offerings, localPos, def.zone, m, agentId, tmpl.persistent);
+            SpawnNPC(building, tmpl.prefab, tmpl.name, tmpl.greeting, tmpl.offerings, localPos, def.zone, m, agentId, tmpl.persistent, tmpl.personality);
         }
 
         // ── Shared Prefab Loading ──
@@ -110,7 +110,7 @@ namespace OpenClawWorlds.World
 
         static void SpawnNPC(Transform building, string prefabName, string npcName,
             string greeting, string[] offerings, Vector3 localPos, Zone zone, TownMaterials m,
-            string agentId = null, bool persistent = false)
+            string agentId = null, bool persistent = false, string personality = null)
         {
             var npc = LoadOrCreateNPC(prefabName, npcName, Vector3.zero, m, new Color(0.8f, 0.6f, 0.4f));
 
@@ -128,7 +128,7 @@ namespace OpenClawWorlds.World
             interactable.Init(InteractableType.NPC, prompt, zone);
 
             var data = npc.AddComponent<NPCData>();
-            data.Init(npcName, greeting, offerings, agentId, persistent);
+            data.Init(npcName, greeting, offerings, agentId, persistent, personality);
 
             if (!string.IsNullOrEmpty(prefabName))
                 AssignAnimator(npc, prefabName);
@@ -143,8 +143,15 @@ namespace OpenClawWorlds.World
             var npc = LoadOrCreateNPC(prefabName, npcName, pos, m, new Color(0.7f, 0.55f, 0.4f));
             npc.transform.SetParent(root);
 
+            // Remove prefab colliders that may interfere with wandering
             foreach (var col in npc.GetComponentsInChildren<Collider>())
                 Object.Destroy(col);
+
+            // Add a trigger collider so the NPC is detectable by raycasts and proximity
+            var tc = npc.AddComponent<BoxCollider>();
+            tc.size = new Vector3(1f, 2f, 1f);
+            tc.center = new Vector3(0, 1f, 0);
+            tc.isTrigger = true;
 
             var wanderer = npc.AddComponent<WanderingNPC>();
             wanderer.Init(speed, radius, 3f, 8f);

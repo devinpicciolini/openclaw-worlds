@@ -13,18 +13,26 @@ namespace OpenClawWorlds.Agents
         public string agentId;
 
         /// <summary>
+        /// Optional personality description injected into the agent's identity.
+        /// Example: "Gruff but kind-hearted. Suspicious of strangers. Loves whiskey."
+        /// </summary>
+        public string personality;
+
+        /// <summary>
         /// Persistent NPCs get their own dedicated agent with full memory.
         /// Disposable NPCs share rotating pool slots that get re-skinned.
         /// </summary>
         public bool persistent;
 
-        public void Init(string name, string greet, string[] items, string agent = null, bool isPersistent = false)
+        public void Init(string name, string greet, string[] items, string agent = null,
+            bool isPersistent = false, string personalityDesc = null)
         {
             npcName = name;
             greeting = greet;
             offerings = items;
             agentId = agent;
             persistent = isPersistent;
+            personality = personalityDesc;
         }
 
         public bool HasAgent => !string.IsNullOrEmpty(agentId);

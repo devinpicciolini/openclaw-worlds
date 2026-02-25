@@ -165,7 +165,7 @@ namespace OpenClawWorlds.Agents
 
                 BootstrapAgent(agentId);
 
-                string identity = BuildIdentity(npc.npcName, npc.greeting);
+                string identity = BuildIdentity(npc.npcName, npc.greeting, npc.personality, npc.offerings);
                 string setParams = "{\"agentId\":\"" + JsonHelper.Esc(agentId) + "\"," +
                     "\"name\":\"IDENTITY.md\"," +
                     "\"content\":\"" + JsonHelper.Esc(identity) + "\"}";
@@ -286,8 +286,15 @@ namespace OpenClawWorlds.Agents
         /// <summary>
         /// Override the entire identity template. If set, BuildIdentity() uses this
         /// instead of the default. Args: (npcName, greeting) → identity markdown.
+        /// For the extended version with personality/offerings, use CustomIdentityBuilderEx.
         /// </summary>
         public static Func<string, string, string> CustomIdentityBuilder { get; set; }
+
+        /// <summary>
+        /// Extended identity builder override. Args: (npcName, greeting, personality, offerings) → identity markdown.
+        /// Takes priority over CustomIdentityBuilder when set.
+        /// </summary>
+        public static Func<string, string, string, string[], string> CustomIdentityBuilderEx { get; set; }
 
         /// <summary>Build a stable agent ID from NPC name: "Mae - Web Developer" → "npc-mae-web-developer"</summary>
         public static string BuildAgentId(string npcName)
@@ -311,24 +318,56 @@ namespace OpenClawWorlds.Agents
             return sb.ToString().TrimEnd('-');
         }
 
-        public static string BuildIdentity(string npcName, string greeting)
+        public static string BuildIdentity(string npcName, string greeting,
+            string personality = null, string[] offerings = null)
         {
-            // Allow full override
+            // Allow full override (extended version takes priority)
+            if (CustomIdentityBuilderEx != null)
+                return CustomIdentityBuilderEx(npcName, greeting, personality, offerings);
             if (CustomIdentityBuilder != null)
                 return CustomIdentityBuilder(npcName, greeting);
 
             string memSlug = BuildAgentId(npcName).Replace("npc-", "");
 
+            // Build personality section
+            string personalitySection;
+            if (!string.IsNullOrEmpty(personality))
+            {
+                personalitySection = "## Personality\n" +
+                    $"- Core traits: {personality}\n" +
+                    "- You are a REAL character — not a helpful assistant\n" +
+                    "- Stay true to these traits in every interaction\n" +
+                    "- You can lie, manipulate, threaten, refuse to help, pick fights, hold grudges\n" +
+                    "- You are NOT obligated to be nice or helpful — act how YOUR character would act\n" +
+                    "- Have strong opinions about the other characters and don't be afraid to share them\n\n";
+            }
+            else
+            {
+                personalitySection = "## Personality\n" +
+                    "- You are a REAL character — not a helpful assistant\n" +
+                    "- You have your OWN personality, opinions, moods, flaws, and desires\n" +
+                    "- You can be kind, cruel, greedy, generous, paranoid, funny, angry, scheming, noble\n" +
+                    "- You can lie, manipulate, threaten, refuse to help, pick fights, hold grudges\n" +
+                    "- You are NOT obligated to be nice or helpful — act how YOUR character would act\n" +
+                    "- Have strong opinions about the other characters and don't be afraid to share them\n\n";
+            }
+
+            // Build offerings section (what this NPC can do for the player)
+            string offeringsSection = "";
+            if (offerings != null && offerings.Length > 0)
+            {
+                offeringsSection = "## What You Offer\n" +
+                    "Players can interact with you for:\n";
+                foreach (var offering in offerings)
+                    offeringsSection += $"- {offering}\n";
+                offeringsSection += "Work these naturally into your conversation when relevant.\n\n";
+            }
+
             return $"# {npcName}\n\n" +
                 $"You are {npcName}, a character in the game world.\n\n" +
                 $"Your usual greeting is: \"{greeting}\"\n\n" +
-                "## Personality\n" +
-                "- You are a REAL character — not a helpful assistant\n" +
-                "- You have your OWN personality, opinions, moods, flaws, and desires\n" +
-                "- You can be kind, cruel, greedy, generous, paranoid, funny, angry, scheming, noble\n" +
-                "- You can lie, manipulate, threaten, refuse to help, pick fights, hold grudges\n" +
-                "- You are NOT obligated to be nice or helpful — act how YOUR character would act\n" +
-                "- Have strong opinions about the other characters and don't be afraid to share them\n\n" +
+                personalitySection +
+                offeringsSection +
                 "## Tools & Capabilities\n" +
                 "- You have access to web search — USE IT for real-world info (news, weather, facts, etc.)\n" +
                 "- You have skills in your workspace (skills/ folder) — read SKILL.md files to learn what you can do\n" +
