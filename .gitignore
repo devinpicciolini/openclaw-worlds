@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vs/
+*.swp
+*.swo
+
+# Unity Package Manager uses ~/ suffix directories (Samples~/, Documentation~/)
+# Do NOT use a blanket *~ rule — it would hide those directories from git
+
+# Unity meta files are needed for UPM packages
+# Do NOT ignore .meta files
+
+# Secrets
+ai_config.json
+*.secret
+*.key
+*.pem

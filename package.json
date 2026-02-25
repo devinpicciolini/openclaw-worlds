@@ -1,0 +1,36 @@
+{
+  "name": "com.openclaw.worlds",
+  "version": "0.1.0",
+  "displayName": "OpenClaw Worlds",
+  "description": "Drop OpenClaw AI agents into any Unity project. They build worlds, do real work, and remember everything.",
+  "unity": "2021.3",
+  "keywords": [
+    "openclaw",
+    "ai",
+    "agents",
+    "procedural",
+    "world-building",
+    "npc"
+  ],
+  "author": {
+    "name": "Devin Picciolini",
+    "url": "https://devin.cx"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devinpicciolini/openclaw-worlds.git"
+  },
+  "samples": [
+    {
+      "displayName": "Western Frontier",
+      "description": "Full 3D western frontier reference implementation",
+      "path": "Samples~/WesternFrontier"
+    },
+    {
+      "displayName": "Minimal Setup",
+      "description": "Bare minimum: one agent, one room, one chat window",
+      "path": "Samples~/MinimalSetup"
+    }
+  ]
+}
