@@ -12,7 +12,7 @@ namespace OpenClawWorlds.Protocols
     [Serializable]
     public class BehaviorDef
     {
-        public string type;            // particle, light, physics, timer, sound, remove
+        public string type;            // particle, light, physics, fog, timer, remove
         public string name;            // unique name for this behavior (for removal)
         public bool followPlayer;      // attach to player position
         public ParticleDef particles;

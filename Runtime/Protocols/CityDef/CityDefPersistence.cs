@@ -61,7 +61,7 @@ namespace OpenClawWorlds.Protocols
                         }
                     }
                 }
-                catch { }
+                catch (Exception e) { Debug.LogWarning($"[CityDef] Error processing {Path.GetFileName(file)}: {e.Message}"); }
             }
         }
 
@@ -114,7 +114,7 @@ namespace OpenClawWorlds.Protocols
                     Debug.Log($"[CityDef] Updated origin for {townName} to {newOrigin}");
                     return;
                 }
-                catch { }
+                catch (Exception e) { Debug.LogWarning($"[CityDef] Error processing {Path.GetFileName(file)}: {e.Message}"); }
             }
         }
 
@@ -133,7 +133,7 @@ namespace OpenClawWorlds.Protocols
                     if (def != null && def.name == townName)
                         return saved.cityJson;
                 }
-                catch { }
+                catch (Exception e) { Debug.LogWarning($"[CityDef] Error processing {Path.GetFileName(file)}: {e.Message}"); }
             }
             return null;
         }

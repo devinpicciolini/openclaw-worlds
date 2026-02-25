@@ -12,7 +12,7 @@ namespace OpenClawWorlds.Protocols
     /// </summary>
     public static class CityDefSpawner
     {
-        /// <summary>Fired when a town is built from a response. Args: (townName, summary).</summary>
+        /// <summary>Fired when a town is built from a response. Args: (summary, rawJson).</summary>
         public static event Action<string, string> OnCityBuilt;
 
         /// <summary>
@@ -44,17 +44,24 @@ namespace OpenClawWorlds.Protocols
             string summary = "";
             foreach (var json in blocks)
             {
+                string result = null;
                 try
                 {
-                    string result = Build(json, spawnOrigin, out Vector3 townPos);
+                    result = Build(json, spawnOrigin, out Vector3 townPos);
                     summary += (summary.Length > 0 ? "\n" : "") + result;
                     spawnOrigin = townPos + new Vector3(100f, 0, 0); // offset next town
-                    OnCityBuilt?.Invoke(result, json);
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"[CityDef] Failed to build from response: {e.Message}");
                     summary += $"\n[CityDef failed: {e.Message}]";
+                }
+
+                // Fire event outside try/catch so subscriber errors don't get blamed on the builder
+                if (result != null)
+                {
+                    try { OnCityBuilt?.Invoke(result, json); }
+                    catch (Exception e) { Debug.LogError($"[CityDef] OnCityBuilt subscriber error: {e.Message}"); }
                 }
             }
 
@@ -248,7 +255,7 @@ namespace OpenClawWorlds.Protocols
 
             var existing = GameObject.Find($"City_{townName}");
             if (existing != null)
-                UnityEngine.Object.DestroyImmediate(existing);
+                UnityEngine.Object.Destroy(existing);
 
             CityDefPersistence.UpdateSavedCityOrigin(townName, newOrigin);
             BuildNoSave(cityJson, newOrigin);

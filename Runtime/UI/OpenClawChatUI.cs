@@ -46,7 +46,16 @@ namespace OpenClawWorlds.UI
         GUIStyle buttonStyle;
         GUIStyle headerStyle;
         GUIStyle statusStyle;
+        GUIStyle hudStyle;
         bool stylesReady;
+        Texture2D boxBgTex;
+
+        void OnDestroy()
+        {
+            CancelInvoke();
+            if (boxBgTex != null)
+                Destroy(boxBgTex);
+        }
 
         void Update()
         {
@@ -260,7 +269,8 @@ namespace OpenClawWorlds.UI
             stylesReady = true;
 
             boxStyle = new GUIStyle(GUI.skin.box);
-            boxStyle.normal.background = MakeTex(2, 2, new Color(0.1f, 0.1f, 0.15f, 0.95f));
+            boxBgTex = MakeTex(2, 2, new Color(0.1f, 0.1f, 0.15f, 0.95f));
+            boxStyle.normal.background = boxBgTex;
 
             labelStyle = new GUIStyle(GUI.skin.label);
             labelStyle.wordWrap = true;
@@ -287,6 +297,11 @@ namespace OpenClawWorlds.UI
             statusStyle.fontSize = 12;
             statusStyle.normal.textColor = new Color(0.7f, 0.7f, 0.7f);
             statusStyle.alignment = TextAnchor.MiddleCenter;
+
+            hudStyle = new GUIStyle(GUI.skin.label);
+            hudStyle.fontSize = 16;
+            hudStyle.richText = true;
+            hudStyle.normal.textColor = Color.white;
         }
 
         Texture2D MakeTex(int w, int h, Color col)
@@ -341,19 +356,15 @@ namespace OpenClawWorlds.UI
             // HUD when chat is closed
             if (!chatOpen)
             {
+                InitStyles();
                 var client = OpenClawClient.Instance;
                 string connStatus = client != null && client.IsConnected
                     ? "<color=#66ff66>Connected to OpenClaw</color>"
                     : "<color=#ff6666>Connecting...</color>";
 
-                var hintStyle = new GUIStyle(GUI.skin.label);
-                hintStyle.fontSize = 16;
-                hintStyle.richText = true;
-                hintStyle.normal.textColor = Color.white;
-
-                GUI.Label(new Rect(15, 15, 400, 30), connStatus, hintStyle);
+                GUI.Label(new Rect(15, 15, 400, 30), connStatus, hudStyle);
                 GUI.Label(new Rect(15, 40, 400, 30),
-                    $"Press <b>{toggleKey}</b> to chat", hintStyle);
+                    $"Press <b>{toggleKey}</b> to chat", hudStyle);
                 return;
             }
 
@@ -447,7 +458,9 @@ namespace OpenClawWorlds.UI
             }
             GUI.enabled = true;
 
-            GUI.FocusControl("ChatInput");
+            // Only steal focus once when chat first opens (not every frame)
+            if (GUI.GetNameOfFocusedControl() != "ChatInput")
+                GUI.FocusControl("ChatInput");
         }
     }
 }

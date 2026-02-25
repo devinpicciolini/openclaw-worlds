@@ -64,7 +64,7 @@ The onboarding wizard walks you through API key configuration, workspace setup, 
 You can verify the gateway is running with:
 
 ```bash
-openclaw gateway status
+openclaw doctor
 ```
 
 ### Configuration File (Optional)
@@ -75,7 +75,8 @@ You can also create `StreamingAssets/ai_config.json` in your Unity project to ov
 {
   "gatewayToken": "your-token-here",
   "gatewayWsUrl": "ws://127.0.0.1:18789",
-  "agentId": "default"
+  "agentId": "default",
+  "assistantName": "Your Agent Name"
 }
 ```
 
@@ -98,7 +99,7 @@ The fastest path is the `MinimalBootstrap` component.
 
 5. Press **Play**.
 
-`MinimalBootstrap` does four things on `Start()`:
+`MinimalBootstrap` does six things on `Start()`:
 
 ```csharp
 void Start()
@@ -109,11 +110,17 @@ void Start()
     // 2. Build a simple ground plane
     BuildGround();
 
-    // 3. Spawn one NPC with an agent
+    // 3. Position the camera
+    SetupCamera();
+
+    // 4. Spawn one NPC with an agent
     SpawnNPC();
 
-    // 4. Connect to the gateway
+    // 5. Connect to the gateway
     ConnectGateway();
+
+    // 6. Create the built-in chat UI (Tab to open)
+    CreateChatUI();
 }
 ```
 

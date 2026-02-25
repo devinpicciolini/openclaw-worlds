@@ -20,8 +20,8 @@ namespace OpenClawWorlds.Gateway
         public bool Connected => connected;
 
         ClientWebSocket ws;
-        bool connected;
-        bool connecting;
+        volatile bool connected;
+        volatile bool connecting;
         readonly Queue<string> incoming = new Queue<string>();
         CancellationTokenSource cts;
 
@@ -33,20 +33,28 @@ namespace OpenClawWorlds.Gateway
         void OnDisable() => Disconnect();
         void OnDestroy() => Disconnect();
 
+        readonly List<string> dispatchBuffer = new List<string>();
+
         void Update()
         {
             lock (incoming)
             {
                 while (incoming.Count > 0)
-                    OnMessage?.Invoke(incoming.Dequeue());
+                    dispatchBuffer.Add(incoming.Dequeue());
             }
+            for (int i = 0; i < dispatchBuffer.Count; i++)
+                OnMessage?.Invoke(dispatchBuffer[i]);
+            dispatchBuffer.Clear();
         }
 
         // ─── Public API ──────────────────────────────────────────────
 
         public void SendRaw(string json)
         {
-            if (ws == null || ws.State != WebSocketState.Open) return;
+            var localWs = ws;
+            var localCts = cts;
+            if (localWs == null || localWs.State != WebSocketState.Open) return;
+            if (localCts == null || localCts.IsCancellationRequested) return;
 
             byte[] bytes = Encoding.UTF8.GetBytes(json);
             var segment = new ArraySegment<byte>(bytes);
@@ -55,11 +63,12 @@ namespace OpenClawWorlds.Gateway
             {
                 try
                 {
-                    await ws.SendAsync(segment, WebSocketMessageType.Text, true, cts.Token);
+                    await localWs.SendAsync(segment, WebSocketMessageType.Text, true, localCts.Token);
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[OpenClaw] WebSocket send error: {e.Message}");
+                    if (!localCts.IsCancellationRequested)
+                        Debug.LogError($"[OpenClaw] WebSocket send error: {e.Message}");
                 }
             });
         }
@@ -113,7 +122,8 @@ namespace OpenClawWorlds.Gateway
             try
             {
                 var uri = new Uri(url);
-                ws.Options.SetRequestHeader("Origin", $"http://{uri.Host}:{uri.Port}");
+                string scheme = uri.Scheme == "wss" ? "https" : "http";
+                ws.Options.SetRequestHeader("Origin", $"{scheme}://{uri.Host}:{uri.Port}");
             }
             catch
             {
@@ -201,7 +211,7 @@ namespace OpenClawWorlds.Gateway
         /// <summary>Force-reset connection state (called after auth failure, etc.)</summary>
         public void ResetConnection()
         {
-            connected = false;
+            Disconnect();
         }
     }
 }

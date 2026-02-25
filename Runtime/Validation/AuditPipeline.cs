@@ -12,12 +12,14 @@ namespace OpenClawWorlds.Validation
     public static class AuditPipeline
     {
         static readonly HashSet<string> ValidZones = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+            "Wilderness", "MainStreet", "SecondStreet",
             "Saloon", "Bank", "Sheriff", "TradingPost", "Hotel", "PostOffice", "Church",
             "Blacksmith", "Doctor", "GeneralStore", "Stables", "Schoolhouse",
-            "Courthouse", "TownLibrary", "Newspaper", "FireDept",
+            "University", "Library", "Theater", "Marketplace",
+            "Residential", "Recreation", "Park", "TownSquare", "CivicRow",
+            "Courthouse", "TownLibrary", "Newspaper", "FireDept", "MillLane", "RanchRoad",
             "LumberYard", "GrainMill", "Bakery", "RanchHouse", "Barn", "FeedStore",
-            "TrainStation", "Cemetery", "University", "Library", "Theater", "Marketplace",
-            "Residential", "Office", "Warehouse"
+            "TrainStation", "Cemetery", "Office", "Warehouse"
         };
 
         static readonly HashSet<string> ValidInteriors = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
@@ -40,6 +42,12 @@ namespace OpenClawWorlds.Validation
         /// These are merged with the built-in set during validation.
         /// </summary>
         public static HashSet<string> AdditionalValidZones { get; set; }
+
+        /// <summary>
+        /// Optional: additional valid interior styles specific to your project.
+        /// These are merged with the built-in set during validation.
+        /// </summary>
+        public static HashSet<string> AdditionalValidInteriors { get; set; }
 
         /// <summary>
         /// Validate a CityDef JSON string. Returns error list (empty = valid).
@@ -120,8 +128,13 @@ namespace OpenClawWorlds.Validation
                     else if (!ValidSides.Contains(b.side))
                         errors.Add($"buildings[{i}] \"{b.name}\": invalid side \"{b.side}\". Must be \"Left\", \"Right\", or \"End\"");
 
-                    if (!string.IsNullOrEmpty(b.interior) && !ValidInteriors.Contains(b.interior))
-                        errors.Add($"buildings[{i}] \"{b.name}\": unknown interior \"{b.interior}\".");
+                    if (!string.IsNullOrEmpty(b.interior))
+                    {
+                        bool validInt = ValidInteriors.Contains(b.interior) ||
+                            (AdditionalValidInteriors != null && AdditionalValidInteriors.Contains(b.interior));
+                        if (!validInt)
+                            errors.Add($"buildings[{i}] \"{b.name}\": unknown interior \"{b.interior}\".");
+                    }
                 }
 
                 if (anyUsedNestedPosition)

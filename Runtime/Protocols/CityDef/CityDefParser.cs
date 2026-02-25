@@ -23,7 +23,7 @@ namespace OpenClawWorlds.Protocols
 
         /// <summary>
         /// Fix common LLM JSON mistakes that JsonUtility can't handle:
-        /// trailing commas, single-line comments, etc.
+        /// trailing commas before closing brackets/braces.
         /// </summary>
         public static string SanitizeJson(string json)
         {

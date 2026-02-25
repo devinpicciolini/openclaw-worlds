@@ -17,7 +17,7 @@ The simplest possible OpenClaw Worlds integration. One scene, one NPC, one agent
 2. Add an empty GameObject and attach `MinimalBootstrap.cs`
 3. Set the **Gateway URL** in the Inspector (default: `ws://127.0.0.1:18789`)
 4. Hit **Play**
-5. Walk up to the NPC capsule and press **E** to interact
+5. Press **Tab** to open the chat panel and talk to the NPC
 
 ## What This Creates
 
@@ -25,6 +25,7 @@ The simplest possible OpenClaw Worlds integration. One scene, one NPC, one agent
 - One NPC (capsule with `Interactable` + `NPCData` components)
 - An `AgentPool` singleton
 - An `OpenClawClient` that connects to your gateway
+- An `OpenClawChatUI` (press **Tab** to chat, **Enter** to send)
 
 ## Handling Interactions
 
@@ -62,6 +63,6 @@ void HandleNPCInteract(Interactable interactable, GameObject actor)
 ## Next Steps
 
 - Add a **player controller** (the SDK doesn't include one)
-- Build a **chat UI** to display NPC conversations
-- Try the **CityDef protocol** to let agents build entire towns
+- Replace the built-in chat UI with your own production UI
+- Try the **CityDef protocol** to let agents build entire towns (the built-in chat already processes CityDef/BehaviorDef responses automatically)
 - See `Documentation~/getting-started.md` for the full guide

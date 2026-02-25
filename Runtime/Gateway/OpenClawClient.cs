@@ -223,11 +223,7 @@ namespace OpenClawWorlds.Gateway
                 return;
             }
 
-            if (type == "hello-ok")
-            {
-                authenticated = true;
-                Debug.Log("[OpenClaw] Authenticated with gateway!");
-            }
+            // Other message types are silently ignored
         }
 
         // ─── Auth handshake ──────────────────────────────────────────
@@ -245,7 +241,7 @@ namespace OpenClawWorlds.Gateway
             string json = "{\"type\":\"req\",\"id\":\"" + reqId + "\"," +
                 "\"method\":\"connect\",\"params\":{" +
                 "\"minProtocol\":3,\"maxProtocol\":3," +
-                "\"client\":{\"id\":\"openclaw-control-ui\",\"version\":\"dev\",\"platform\":\"web\",\"mode\":\"webchat\"}," +
+                "\"client\":{\"id\":\"openclaw-unity-sdk\",\"version\":\"1.0.0\",\"platform\":\"unity\",\"mode\":\"agent\"}," +
                 "\"role\":\"operator\"," +
                 "\"scopes\":[\"operator.read\",\"operator.write\",\"operator.admin\"]," +
                 "\"caps\":[\"tool-events\"]" +
@@ -283,7 +279,7 @@ namespace OpenClawWorlds.Gateway
             {
                 string text = JsonHelper.ExtractDataText(raw);
                 if (!string.IsNullOrEmpty(text))
-                    session.accumulated = text;
+                    session.accumulated += text;
             }
             else if (stream == "lifecycle")
             {
@@ -317,7 +313,7 @@ namespace OpenClawWorlds.Gateway
                 case "delta":
                     string deltaText = JsonHelper.ExtractMessageText(raw);
                     if (!string.IsNullOrEmpty(deltaText))
-                        session.accumulated = deltaText;
+                        session.accumulated += deltaText;
                     break;
 
                 case "final":

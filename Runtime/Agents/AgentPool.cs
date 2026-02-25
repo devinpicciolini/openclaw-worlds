@@ -239,18 +239,38 @@ namespace OpenClawWorlds.Agents
                 if (!System.IO.Directory.Exists(sharedMemDir))
                     System.IO.Directory.CreateDirectory(sharedMemDir);
 
-                // 4. Symlink global skills into workspace
+                // 4. Symlink global skills into workspace (cross-platform)
                 string globalSkills = System.IO.Path.Combine(ocDir, "skills");
                 string localSkills = System.IO.Path.Combine(workspace, "skills");
                 if (System.IO.Directory.Exists(globalSkills) && !System.IO.Directory.Exists(localSkills))
                 {
-                    var psi = new System.Diagnostics.ProcessStartInfo("ln",
-                        $"-s \"{globalSkills}\" \"{localSkills}\"")
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+                    // Windows: use directory junction (mklink /J) — works without admin
+                    try
                     {
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    };
-                    System.Diagnostics.Process.Start(psi)?.WaitForExit(2000);
+                        var psi = new System.Diagnostics.ProcessStartInfo("cmd.exe",
+                            $"/c mklink /J \"{localSkills}\" \"{globalSkills}\"")
+                        {
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+                        System.Diagnostics.Process.Start(psi)?.WaitForExit(2000);
+                    }
+                    catch { /* junction failed — non-fatal */ }
+#else
+                    // macOS/Linux: standard symlink
+                    try
+                    {
+                        var psi = new System.Diagnostics.ProcessStartInfo("ln",
+                            $"-s \"{globalSkills}\" \"{localSkills}\"")
+                        {
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+                        System.Diagnostics.Process.Start(psi)?.WaitForExit(2000);
+                    }
+                    catch { /* symlink failed — non-fatal */ }
+#endif
                 }
             }
             catch (System.Exception ex)

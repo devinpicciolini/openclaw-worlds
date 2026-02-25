@@ -189,7 +189,7 @@ namespace OpenClawWorlds.Protocols
             if (l.position != null && l.position.Length >= 3)
                 go.transform.position = new Vector3(l.position[0], l.position[1], l.position[2]);
 
-            string mode = (l.mode ?? "point").ToLower();
+            string mode = (l.mode ?? "ambient").ToLower();
 
             if (mode == "ambient")
             {
@@ -436,7 +436,10 @@ namespace OpenClawWorlds.Protocols
             if (Time.time - startTime >= delay)
             {
                 if (!string.IsNullOrEmpty(targetName))
-                    BehaviorEngine.Execute($"{{\"type\":\"remove\",\"name\":\"{targetName}\"}}");
+                {
+                    string safeName = targetName.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                    BehaviorEngine.Execute($"{{\"type\":\"remove\",\"name\":\"{safeName}\"}}");
+                }
                 Destroy(gameObject);
             }
         }

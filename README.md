@@ -109,6 +109,7 @@ The original game this SDK was extracted from was built with [POLYGON Western](h
 The SDK doesn't care what art you use. Implement `IAssetMapper` to map building types to your prefab names:
 
 ```csharp
+using OpenClawWorlds;
 using OpenClawWorlds.World;
 
 public class MyAssetMapper : DefaultAssetMapper
@@ -212,7 +213,7 @@ using OpenClawWorlds.UI;
 gameObject.AddComponent<OpenClawChatUI>();
 ```
 
-It auto-detects nearby NPCs and routes messages to their agent. If there's no NPC, it talks to your main agent from `ai_config.json`. Replace it with your own UI when you're ready for production.
+It auto-detects nearby NPCs and routes messages to their agent. If there's no NPC, it talks to your main agent from `ai_config.json`. Every response is automatically processed through all three protocols — if the agent returns CityDef JSON, a town appears; if it returns BehaviorDef, weather changes; if it returns C# code, it compiles live. Replace it with your own UI when you're ready for production.
 
 ---
 
@@ -370,7 +371,7 @@ Documentation~/
 ## Requirements
 
 - **Unity 2021.3 LTS** or newer (any render pipeline)
-- **.NET Standard 2.1**
+- **.NET Standard 2.0** or .NET 4.x
 - **OpenClaw** installed and gateway running
 - Zero third-party dependencies
 
