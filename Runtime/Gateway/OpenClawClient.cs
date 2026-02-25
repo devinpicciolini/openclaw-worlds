@@ -370,17 +370,18 @@ namespace OpenClawWorlds.Gateway
 
             string stream = JsonHelper.ExtractString(raw, "\"stream\"");
 
-            if (stream == "assistant")
-            {
-                string text = JsonHelper.ExtractDataText(raw);
-                if (!string.IsNullOrEmpty(text))
-                    session.accumulated += text;
-            }
-            else if (stream == "lifecycle")
+            // NOTE: We intentionally do NOT accumulate "assistant" stream text here.
+            // The "chat" event handler (HandleChatEvent) already accumulates via "delta" state.
+            // Both fire for the same session — accumulating in both causes duplicate text.
+            // The agent "lifecycle.end" event is used only as a fallback finish signal.
+
+            if (stream == "lifecycle")
             {
                 string phase = JsonHelper.ExtractString(raw, "\"phase\"");
                 if (phase == "end" && !session.finished)
                 {
+                    // Give chat events a moment — they usually arrive before lifecycle.end.
+                    // If accumulated is empty, the chat deltas may not have arrived yet.
                     if (!string.IsNullOrEmpty(session.accumulated))
                     {
                         Debug.Log($"[OpenClaw] Agent finished ({sessionKey})");
