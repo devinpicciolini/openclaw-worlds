@@ -95,6 +95,55 @@ namespace OpenClawWorlds.Protocols
         }
 
         /// <summary>
+        /// Attempt to repair corrupted CityDef JSON by truncating at each }
+        /// from the end and closing unclosed arrays/objects until it parses.
+        /// Returns repaired JSON or null if unfixable.
+        /// </summary>
+        public static string TryRepairJson(string json)
+        {
+            // Walk backwards through each } and try to close unclosed structures
+            for (int i = json.Length - 1; i > 20; i--)
+            {
+                if (json[i] != '}') continue;
+
+                string attempt = json.Substring(0, i + 1);
+
+                // Count unclosed braces and brackets (simple, not string-aware
+                // — good enough since we're truncating at known } positions)
+                int braces = 0, brackets = 0;
+                for (int j = 0; j < attempt.Length; j++)
+                {
+                    char c = attempt[j];
+                    if (c == '{') braces++;
+                    else if (c == '}') braces--;
+                    else if (c == '[') brackets++;
+                    else if (c == ']') brackets--;
+                }
+
+                // Build closing suffix
+                string suffix = "";
+                for (int b = 0; b < brackets; b++) suffix += "]";
+                for (int b = 0; b < braces; b++) suffix += "}";
+
+                string repaired = attempt + suffix;
+
+                try
+                {
+                    string sanitized = SanitizeJson(repaired);
+                    var city = JsonUtility.FromJson<CityDef>(sanitized);
+                    if (city != null && !string.IsNullOrEmpty(city.name))
+                    {
+                        Debug.Log($"[CityDef] Repaired JSON by truncating at pos {i}, closing {brackets}x], {braces}x}}");
+                        return sanitized;
+                    }
+                }
+                catch { /* keep trying earlier positions */ }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Parse a CityDef from JSON. Sanitizes, deserializes, normalizes, and auto-packs.
         /// </summary>
         public static CityDef Parse(string json)

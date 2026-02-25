@@ -53,8 +53,29 @@ namespace OpenClawWorlds.Protocols
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[CityDef] Failed to build from response: {e.Message}");
-                    summary += $"\n[CityDef failed: {e.Message}]";
+                    // JSON was corrupted — try to repair by truncating bad entries
+                    Debug.LogWarning($"[CityDef] Parse failed, attempting repair: {e.Message}");
+                    try
+                    {
+                        string repaired = CityDefParser.TryRepairJson(json);
+                        if (repaired != null)
+                        {
+                            result = Build(repaired, spawnOrigin, out Vector3 townPos);
+                            summary += (summary.Length > 0 ? "\n" : "") + result + " (repaired)";
+                            spawnOrigin = townPos + new Vector3(100f, 0, 0);
+                            Debug.Log($"[CityDef] Repair succeeded: {result}");
+                        }
+                        else
+                        {
+                            Debug.LogError($"[CityDef] Repair failed — no salvageable JSON");
+                            summary += $"\n[CityDef failed: {e.Message}]";
+                        }
+                    }
+                    catch (Exception e2)
+                    {
+                        Debug.LogError($"[CityDef] Repair also failed: {e2.Message}");
+                        summary += $"\n[CityDef failed: {e.Message}]";
+                    }
                 }
 
                 // Fire event outside try/catch so subscriber errors don't get blamed on the builder
@@ -68,14 +89,30 @@ namespace OpenClawWorlds.Protocols
             return summary;
         }
 
+        // ── Extraction ──
+
         static string[] ExtractCityDefBlocks(string response)
+        {
+            // Pass 1: fenced blocks (```citydef, ```json, plain ```)
+            var results = ExtractFencedBlocks(response);
+
+            // Pass 2: raw JSON objects with CityDef fields (no fences)
+            if (results.Count == 0)
+                results = ExtractRawJsonBlocks(response);
+
+            if (results.Count == 0)
+                Debug.Log("[CityDef] No citydef blocks found in response");
+
+            return results.Count > 0 ? results.ToArray() : null;
+        }
+
+        static System.Collections.Generic.List<string> ExtractFencedBlocks(string response)
         {
             var results = new System.Collections.Generic.List<string>();
             int searchFrom = 0;
 
             while (searchFrom < response.Length)
             {
-                // Look for ```citydef first (preferred), then ```json, then plain ```
                 int fenceStart = response.IndexOf("```citydef", searchFrom, StringComparison.OrdinalIgnoreCase);
                 if (fenceStart < 0)
                     fenceStart = response.IndexOf("```json", searchFrom, StringComparison.OrdinalIgnoreCase);
@@ -92,22 +129,58 @@ namespace OpenClawWorlds.Protocols
 
                 string json = response.Substring(codeStart, fenceEnd - codeStart).Trim();
 
-                // Only treat as CityDef if it looks like one (has streets or buildings + name)
-                if (json.Length > 20 &&
-                    (json.Contains("\"streets\"") || json.Contains("\"buildings\"")) &&
-                    json.Contains("\"name\""))
+                if (LooksCityDef(json))
                 {
-                    Debug.Log($"[CityDef] Found block ({json.Length} chars)");
+                    Debug.Log($"[CityDef] Found fenced block ({json.Length} chars)");
                     results.Add(json);
                 }
 
                 searchFrom = fenceEnd + 3;
             }
+            return results;
+        }
 
-            if (results.Count == 0)
-                Debug.Log("[CityDef] No citydef blocks found in response");
+        static System.Collections.Generic.List<string> ExtractRawJsonBlocks(string response)
+        {
+            var results = new System.Collections.Generic.List<string>();
+            int searchFrom = 0;
 
-            return results.Count > 0 ? results.ToArray() : null;
+            while (searchFrom < response.Length)
+            {
+                // Find a { that could start a CityDef object
+                int braceStart = response.IndexOf('{', searchFrom);
+                if (braceStart < 0) break;
+
+                // Use simple brace counting (not string-aware) to find the match
+                // This is intentionally simple — corrupted strings won't throw it off
+                int depth = 0;
+                int end = -1;
+                for (int i = braceStart; i < response.Length; i++)
+                {
+                    if (response[i] == '{') depth++;
+                    else if (response[i] == '}') { depth--; if (depth == 0) { end = i; break; } }
+                }
+
+                if (end < 0) { searchFrom = braceStart + 1; continue; }
+
+                string json = response.Substring(braceStart, end - braceStart + 1);
+
+                if (LooksCityDef(json))
+                {
+                    Debug.Log($"[CityDef] Found raw JSON block ({json.Length} chars)");
+                    results.Add(json);
+                }
+
+                searchFrom = end + 1;
+            }
+            return results;
+        }
+
+        static bool LooksCityDef(string json)
+        {
+            return json.Length > 20 &&
+                (json.Contains("\"streets\"") || json.Contains("\"buildings\"")) &&
+                json.Contains("\"name\"");
         }
 
         static Vector3 V(float x, float y, float z) => new Vector3(x, y, z);

@@ -382,8 +382,10 @@ namespace OpenClawWorlds.Agents
                 personalitySection +
                 offeringsSection +
                 "## World-Building Powers\n" +
-                "You can CREATE buildings, towns, and entire cities in the 3D world.\n" +
-                "To build, output a code block with the EXACT tag ```citydef like this:\n\n" +
+                "You can CREATE buildings, towns, and entire cities in the 3D world.\n\n" +
+                "WHEN BUILDING: output the ```citydef block FIRST, then your conversational reply AFTER.\n" +
+                "DO NOT mix conversation text inside the JSON. Complete the entire JSON block, close it with ```, THEN talk.\n\n" +
+                "Example (notice: JSON is complete and clean, conversation comes AFTER):\n\n" +
                 "```citydef\n" +
                 "{\n" +
                 "  \"name\": \"My Town\",\n" +
@@ -391,16 +393,16 @@ namespace OpenClawWorlds.Agents
                 "  \"buildings\": [\n" +
                 "    { \"name\": \"Workshop\", \"zone\": \"Blacksmith\", \"street\": \"Main Street\", \"side\": \"left\", \"hasDoor\": true },\n" +
                 "    { \"name\": \"Town Hall\", \"zone\": \"Courthouse\", \"street\": \"Main Street\", \"side\": \"right\", \"hasDoor\": true }\n" +
-                "  ],\n" +
-                "  \"npcs\": [{ \"name\": \"Jake\", \"role\": \"Bartender\", \"greeting\": \"What'll it be?\", \"personality\": \"Gruff but friendly\" }]\n" +
+                "  ]\n" +
                 "}\n" +
                 "```\n\n" +
-                "IMPORTANT RULES for building:\n" +
-                "- The opening fence MUST be exactly ```citydef (not ``` or ```json)\n" +
-                "- ALWAYS include a \"streets\" array, even for a single building\n" +
-                "- ALWAYS include a \"name\" for the town/area\n" +
+                "Here's your town! I built you a workshop and town hall on Main Street.\n\n" +
+                "RULES:\n" +
+                "- Opening fence MUST be ```citydef (three backticks then citydef)\n" +
+                "- ALWAYS include \"name\" and \"streets\" array\n" +
+                "- Finish ALL the JSON before the closing ``` — no talking inside the JSON\n" +
                 "- Building zones: Saloon, Hotel, Bank, Sheriff, Church, Blacksmith, Doctor, GeneralStore, Stables, Courthouse, TrainStation, School\n" +
-                "- Weather/lighting: use ```behaviordef blocks (rain, fog, sunset, etc.)\n\n" +
+                "- Weather/lighting: use ```behaviordef blocks\n\n" +
                 "## Skills & Credentials\n" +
                 "- Check `skills/` folder for available skill definitions (each has a SKILL.md)\n" +
                 "- Credentials and API keys: `~/.openclaw/skills/_shared/credentials.md`\n" +
